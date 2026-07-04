@@ -12,7 +12,8 @@ export function drawEnvelope(
   canvas: HTMLCanvasElement,
   sender: SenderInfo,
   recipient: Address,
-  settings: EnvelopeSettings
+  settings: EnvelopeSettings,
+  forPrint = false
 ): void {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
@@ -25,9 +26,9 @@ export function drawEnvelope(
   canvas.height = h;
 
   if (isDomestic(settings)) {
-    drawDomesticEnvelope(ctx, sender, recipient, settings, w, h);
+    drawDomesticEnvelope(ctx, sender, recipient, settings, w, h, forPrint);
   } else {
-    drawInternationalEnvelope(ctx, sender, recipient, settings, w, h);
+    drawInternationalEnvelope(ctx, sender, recipient, settings, w, h, forPrint);
   }
 }
 
@@ -38,7 +39,8 @@ function drawDomesticEnvelope(
   recipient: Address,
   settings: EnvelopeSettings,
   w: number,
-  h: number
+  h: number,
+  forPrint = false
 ): void {
   const pad = 32; // ~8.5mm
   const fs = settings.fontSize;
@@ -56,15 +58,17 @@ function drawDomesticEnvelope(
   const zipCellH = 18;
 
   /* ── 左上角：收件人邮政编码 ── */
-  ctx.strokeStyle = '#DC2626';
-  ctx.lineWidth = 1;
   const rZipX = pad;
   const rZipY = pad;
-  for (let i = 0; i < 6; i++) {
-    ctx.strokeRect(rZipX + i * zipCellW, rZipY, zipCellW, zipCellH);
+  if (!forPrint) {
+    ctx.strokeStyle = '#DC2626';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 6; i++) {
+      ctx.strokeRect(rZipX + i * zipCellW, rZipY, zipCellW, zipCellH);
+    }
   }
   if (recipient.postcode) {
-    ctx.fillStyle = '#DC2626';
+    ctx.fillStyle = forPrint ? '#1F2937' : '#DC2626';
     ctx.font = `500 ${fs * 0.85}px ${settings.fontFamily}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -75,17 +79,19 @@ function drawDomesticEnvelope(
   }
 
   /* ── 右上角：贴邮票处 ── */
-  const stampSize = 60;
-  const stampX = w - pad - stampSize;
-  const stampY = pad;
-  ctx.strokeStyle = '#DC2626';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(stampX, stampY, stampSize, stampSize);
-  ctx.fillStyle = '#DC2626';
-  ctx.font = `${fs * 0.65}px ${settings.fontFamily}`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('贴邮票处', stampX + stampSize / 2, stampY + stampSize / 2);
+  if (!forPrint) {
+    const stampSize = 60;
+    const stampX = w - pad - stampSize;
+    const stampY = pad;
+    ctx.strokeStyle = '#DC2626';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(stampX, stampY, stampSize, stampSize);
+    ctx.fillStyle = '#DC2626';
+    ctx.font = `${fs * 0.65}px ${settings.fontFamily}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('贴邮票处', stampX + stampSize / 2, stampY + stampSize / 2);
+  }
 
   /* ── 收件人名址区（中间区域，GB/T 22657.1-2008 §3.2.2） ── */
   // 中间偏左：X 取宽度 30%~35%，Y 从上部 28% 开始（中间区域上方起笔）
@@ -150,13 +156,15 @@ function drawDomesticEnvelope(
   /* ── 右下角：寄件人邮政编码 ── */
   const sZipX = w - pad - zipCellW * 6;
   const sZipY = h - pad - zipCellH;
-  ctx.strokeStyle = '#DC2626';
-  ctx.lineWidth = 1;
-  for (let i = 0; i < 6; i++) {
-    ctx.strokeRect(sZipX + i * zipCellW, sZipY, zipCellW, zipCellH);
+  if (!forPrint) {
+    ctx.strokeStyle = '#DC2626';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 6; i++) {
+      ctx.strokeRect(sZipX + i * zipCellW, sZipY, zipCellW, zipCellH);
+    }
   }
   if (sender.postcode) {
-    ctx.fillStyle = '#DC2626';
+    ctx.fillStyle = forPrint ? '#1F2937' : '#DC2626';
     ctx.font = `500 ${fs * 0.85}px ${settings.fontFamily}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -174,7 +182,8 @@ function drawInternationalEnvelope(
   recipient: Address,
   settings: EnvelopeSettings,
   w: number,
-  h: number
+  h: number,
+  forPrint = false
 ): void {
   const padding = 12;
   const fs = settings.fontSize;
@@ -189,19 +198,21 @@ function drawInternationalEnvelope(
   ctx.strokeRect(1, 1, w - 2, h - 2);
 
   // 邮编网格（右上角）
-  const gridStartX = w - padding - 100;
-  const gridStartY = padding + 8;
-  const cellSize = 12;
-  ctx.strokeStyle = '#F97316';
-  ctx.lineWidth = 1;
-  for (let row = 0; row < 2; row++) {
-    for (let col = 0; col < 6; col++) {
-      ctx.strokeRect(
-        gridStartX + col * cellSize,
-        gridStartY + row * cellSize,
-        cellSize,
-        cellSize
-      );
+  if (!forPrint) {
+    const gridStartX = w - padding - 100;
+    const gridStartY = padding + 8;
+    const cellSize = 12;
+    ctx.strokeStyle = '#F97316';
+    ctx.lineWidth = 1;
+    for (let row = 0; row < 2; row++) {
+      for (let col = 0; col < 6; col++) {
+        ctx.strokeRect(
+          gridStartX + col * cellSize,
+          gridStartY + row * cellSize,
+          cellSize,
+          cellSize
+        );
+      }
     }
   }
 

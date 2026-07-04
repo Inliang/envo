@@ -7,6 +7,14 @@ import { useReactToPrint } from 'react-to-print';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
+interface AmapTip {
+  name: string;
+  address: string;
+  postcode?: string;
+  adcode?: string;
+  location?: string;
+}
+
 export default function EnvelopeEditor() {
   const {
     settings,
@@ -21,12 +29,13 @@ export default function EnvelopeEditor() {
   } = useStore();
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const printCanvasRef = useRef<HTMLCanvasElement>(null);
   const printRef = useRef<HTMLDivElement>(null);
   const [sender, setSender] = useState<SenderInfo>(settings.defaultSender);
   const [recipient, setRecipient] = useState<Address>(
     currentRecipient || { id: '', name: '', recipient: '', address: '', phone: '', postcode: '', createdAt: '' }
   );
-  const [amapSuggestions, setAmapSuggestions] = useState<{ name: string; address: string }[]>([]);
+  const [amapSuggestions, setAmapSuggestions] = useState<AmapTip[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedSuggestionIdx, setSelectedSuggestionIdx] = useState(-1);
   const [printMode, setPrintMode] = useState<'none' | 'print' | 'pdf'>('none');
@@ -38,6 +47,12 @@ export default function EnvelopeEditor() {
   useEffect(() => {
     if (!canvasRef.current) return;
     drawEnvelope(canvasRef.current, sender, recipient, currentEnvelope);
+  }, [sender, recipient, currentEnvelope]);
+
+  // Draw print canvas without red boxes
+  useEffect(() => {
+    if (!printCanvasRef.current) return;
+    drawEnvelope(printCanvasRef.current, sender, recipient, currentEnvelope, true);
   }, [sender, recipient, currentEnvelope]);
 
   // AMap autocomplete with debounce
@@ -64,11 +79,14 @@ export default function EnvelopeEditor() {
           .then((data) => {
             if (fetchId !== amapFetchRef.current) return;
             if (data.tips && data.tips.length > 0) {
-              const tips = data.tips
+              const tips: AmapTip[] = data.tips
                 .filter((t: { name: string }) => t.name && t.name !== '中华人民共和国')
-                .map((t: { name: string; address: string }) => ({
+                .map((t: { name: string; address: string; postcode?: string; adcode?: string; location?: string }) => ({
                   name: t.name,
                   address: t.address || '',
+                  postcode: t.postcode,
+                  adcode: t.adcode,
+                  location: t.location,
                 }));
               setAmapSuggestions(tips);
               setShowSuggestions(tips.length > 0);
@@ -88,7 +106,14 @@ export default function EnvelopeEditor() {
     const s = amapSuggestions[idx];
     if (!s) return;
     const full = s.address ? `${s.address} ${s.name}` : s.name;
-    setRecipient((r) => ({ ...r, address: full }));
+    setRecipient((r) => {
+      const updates: Partial<Address> = { address: full };
+      // 如果 API 返回了邮编数据，自动填入
+      if (s.postcode && s.postcode.length > 0) {
+        updates.postcode = s.postcode;
+      }
+      return { ...r, ...updates };
+    });
     setShowSuggestions(false);
     setAmapSuggestions([]);
   };
@@ -250,7 +275,7 @@ export default function EnvelopeEditor() {
                       className={`w-full text-left px-4 py-2.5 text-sm hover:bg-brand-50 transition-colors ${
                         i === selectedSuggestionIdx ? 'bg-brand-50' : ''
                       }`}
-                      onMouseDown={() => selectAmapSuggestion(i)}
+                      onMouseDown={(e) => { e.preventDefault(); selectAmapSuggestion(i); }}
                     >
                       <div className="font-medium text-brand-800">{s.name}</div>
                       {s.address && <div className="text-xs text-brand-400 mt-0.5">{s.address}</div>}
@@ -423,19 +448,9 @@ export default function EnvelopeEditor() {
           )}
         </div>
 
-        {/* Hidden print area */}
+        {/* Hidden print area — 使用无红框的打印专用 Canvas */}
         <div ref={printRef} className="print-area" style={{ display: 'none' }}>
-          <canvas
-            id="print-canvas"
-            ref={(el) => {
-              if (el && canvasRef.current) {
-                el.width = canvasRef.current.width;
-                el.height = canvasRef.current.height;
-                const ctx = el.getContext('2d');
-                if (ctx) ctx.drawImage(canvasRef.current, 0, 0);
-              }
-            }}
-          />
+          <canvas ref={printCanvasRef} id="print-canvas" />
         </div>
       </div>
     </div>
