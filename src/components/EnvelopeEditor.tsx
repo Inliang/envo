@@ -10,6 +10,7 @@ import jsPDF from 'jspdf';
 interface AmapTip {
   name: string;
   address: string;
+  district?: string;
   postcode?: string;
   adcode?: string;
   location?: string;
@@ -81,9 +82,10 @@ export default function EnvelopeEditor() {
             if (data.tips && data.tips.length > 0) {
               const tips: AmapTip[] = data.tips
                 .filter((t: { name: string }) => t.name && t.name !== '中华人民共和国')
-                .map((t: { name: string; address: string; postcode?: string; adcode?: string; location?: string }) => ({
+                .map((t: { name: string; address: string; district?: string; postcode?: string; adcode?: string; location?: string }) => ({
                   name: t.name,
                   address: t.address || '',
+                  district: t.district || '',
                   postcode: t.postcode,
                   adcode: t.adcode,
                   location: t.location,
@@ -105,7 +107,17 @@ export default function EnvelopeEditor() {
   const selectAmapSuggestion = (idx: number) => {
     const s = amapSuggestions[idx];
     if (!s) return;
-    const full = s.address ? `${s.address} ${s.name}` : s.name;
+
+    // 构建完整地址：address > district > name 逐级兜底
+    // 末尾去重：如果基础字符串已以 name 结尾，不重复拼接
+    let full: string;
+    const base = s.address || s.district || '';
+    if (base) {
+      full = base.endsWith(s.name) ? base : `${base}${s.name}`;
+    } else {
+      full = s.name;
+    }
+
     setRecipient((r) => {
       const updates: Partial<Address> = { address: full };
       // 如果 API 返回了邮编数据，自动填入
