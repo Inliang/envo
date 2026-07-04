@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    min-height: 100dvh;
+  }
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #99F6E4;
+    border-radius: 3px;
+  }
+}
+
+@layer components {
+  .card-bento {
+    @apply bg-white rounded-2xl border border-brand-100 shadow-sm;
+  }
+  .btn-primary {
+    @apply bg-brand-600 text-white px-5 py-2.5 rounded-xl font-medium
+           hover:bg-brand-700 active:scale-[0.98] transition-all duration-150
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-cta {
+    @apply bg-cta-500 text-white px-5 py-2.5 rounded-xl font-medium
+           hover:bg-cta-600 active:scale-[0.98] transition-all duration-150;
+  }
+  .btn-outline {
+    @apply border border-brand-200 text-brand-700 px-5 py-2.5 rounded-xl font-medium
+           hover:bg-brand-50 active:scale-[0.98] transition-all duration-150;
+  }
+  .input-field {
+    @apply w-full px-4 py-2.5 bg-white border border-brand-200 rounded-xl
+           text-brand-900 placeholder-brand-300
+           focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent
+           transition-all duration-150;
+  }
+  .tag {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-area, .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}
