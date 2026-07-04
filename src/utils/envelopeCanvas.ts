@@ -31,7 +31,7 @@ export function drawEnvelope(
   }
 }
 
-/* ============ 国内信封格式（GB/T 1416-2003） ============ */
+/* ============ 国内信封格式（GB/T 22657.1-2008） ============ */
 function drawDomesticEnvelope(
   ctx: CanvasRenderingContext2D,
   sender: SenderInfo,
@@ -41,7 +41,6 @@ function drawDomesticEnvelope(
   h: number
 ): void {
   const pad = 32; // ~8.5mm
-  const midX = w * 0.5;
   const fs = settings.fontSize;
 
   // 白色信封背景
@@ -53,20 +52,108 @@ function drawDomesticEnvelope(
   ctx.lineWidth = 1;
   ctx.strokeRect(1, 1, w - 2, h - 2);
 
-  /* ── 左上角：寄件人邮编 ── */
-  ctx.strokeStyle = '#DC2626';
-  ctx.lineWidth = 1;
   const zipCellW = 14;
   const zipCellH = 18;
-  const zipX = pad;
-  const zipY = pad;
 
-  // 6个邮编方格
+  /* ── 左上角：收件人邮政编码 ── */
+  ctx.strokeStyle = '#DC2626';
+  ctx.lineWidth = 1;
+  const rZipX = pad;
+  const rZipY = pad;
   for (let i = 0; i < 6; i++) {
-    ctx.strokeRect(zipX + i * zipCellW, zipY, zipCellW, zipCellH);
+    ctx.strokeRect(rZipX + i * zipCellW, rZipY, zipCellW, zipCellH);
+  }
+  if (recipient.postcode) {
+    ctx.fillStyle = '#DC2626';
+    ctx.font = `500 ${fs * 0.85}px ${settings.fontFamily}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const digits = recipient.postcode.replace(/\D/g, '').slice(0, 6);
+    for (let i = 0; i < digits.length; i++) {
+      ctx.fillText(digits[i], rZipX + i * zipCellW + zipCellW / 2, rZipY + zipCellH / 2);
+    }
   }
 
-  // 填入邮编数字
+  /* ── 右上角：贴邮票处 ── */
+  const stampSize = 60;
+  const stampX = w - pad - stampSize;
+  const stampY = pad;
+  ctx.strokeStyle = '#DC2626';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(stampX, stampY, stampSize, stampSize);
+  ctx.fillStyle = '#DC2626';
+  ctx.font = `${fs * 0.65}px ${settings.fontFamily}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('贴邮票处', stampX + stampSize / 2, stampY + stampSize / 2);
+
+  /* ── 收件人地址（上部偏左） ── */
+  const recipX = pad + 10;
+  const recipAddrY = rZipY + zipCellH + 18;
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+
+  const addrLines = recipient.address.split('\n').filter(Boolean);
+  if (addrLines.length > 0) {
+    ctx.font = `${fs}px ${settings.fontFamily}`;
+    ctx.fillStyle = '#1F2937';
+    addrLines.forEach((line, i) => {
+      ctx.fillText(line, recipX, recipAddrY + i * (fs * 1.5));
+    });
+  }
+
+  /* ── 收件人姓名（中部偏左，大字号） ── */
+  const nameY = recipAddrY + (addrLines.length || 1) * (fs * 1.5) + 12;
+  ctx.fillStyle = '#134E4A';
+  ctx.font = `600 ${fs * 1.35}px ${settings.fontFamily}`;
+  const displayName = recipient.recipient || recipient.name || '';
+  ctx.fillText(displayName + (displayName ? '（收）' : ''), recipX, nameY);
+
+  // 收件人电话
+  if (recipient.phone) {
+    ctx.font = `${fs * 0.8}px ${settings.fontFamily}`;
+    ctx.fillStyle = '#6B7280';
+    ctx.fillText(recipient.phone, recipX, nameY + fs * 1.8);
+  }
+
+  /* ── 空状态提示 ── */
+  if (!recipient.name && !recipient.address) {
+    ctx.fillStyle = '#D1D5DB';
+    ctx.font = `${fs * 0.9}px ${settings.fontFamily}`;
+    ctx.textAlign = 'center';
+    ctx.fillText('请填写收件人信息', w * 0.5, h * 0.55);
+  }
+
+  /* ── 寄件人地址（下部偏右） ── */
+  if (settings.showReturnAddress && (sender.name || sender.address)) {
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    const senderLines: string[] = [];
+    if (sender.address) senderLines.push(sender.address);
+    if (sender.name) senderLines.push(sender.name);
+    if (sender.phone) senderLines.push(sender.phone);
+
+    const sZipBottom = h - pad - zipCellH - 4;
+    let senderY = sZipBottom - 6;
+    ctx.font = `${fs * 0.75}px ${settings.fontFamily}`;
+    ctx.fillStyle = '#6B7280';
+
+    // 从下往上绘制寄件人信息（最后一行贴近邮编框上方）
+    for (let i = senderLines.length - 1; i >= 0; i--) {
+      ctx.fillText(senderLines[i], w - pad - zipCellW * 6 - 10, senderY);
+      senderY -= fs * 0.95;
+    }
+  }
+
+  /* ── 右下角：寄件人邮政编码 ── */
+  const sZipX = w - pad - zipCellW * 6;
+  const sZipY = h - pad - zipCellH;
+  ctx.strokeStyle = '#DC2626';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 6; i++) {
+    ctx.strokeRect(sZipX + i * zipCellW, sZipY, zipCellW, zipCellH);
+  }
   if (sender.postcode) {
     ctx.fillStyle = '#DC2626';
     ctx.font = `500 ${fs * 0.85}px ${settings.fontFamily}`;
@@ -74,110 +161,8 @@ function drawDomesticEnvelope(
     ctx.textBaseline = 'middle';
     const digits = sender.postcode.replace(/\D/g, '').slice(0, 6);
     for (let i = 0; i < digits.length; i++) {
-      ctx.fillText(
-        digits[i],
-        zipX + i * zipCellW + zipCellW / 2,
-        zipY + zipCellH / 2
-      );
+      ctx.fillText(digits[i], sZipX + i * zipCellW + zipCellW / 2, sZipY + zipCellH / 2);
     }
-  }
-
-  /* ── 寄件人地址（邮编下方） ── */
-  if (settings.showReturnAddress && (sender.name || sender.address)) {
-    ctx.fillStyle = '#6B7280';
-    ctx.font = `${fs * 0.75}px ${settings.fontFamily}`;
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-
-    const senderY = zipY + zipCellH + 6;
-    const lines: string[] = [];
-    if (sender.name) lines.push(sender.name);
-    if (sender.address) lines.push(sender.address);
-    if (sender.phone) lines.push(sender.phone);
-
-    lines.forEach((line, i) => {
-      ctx.fillText(line, zipX, senderY + i * (fs * 0.85));
-    });
-  }
-
-  /* ── 右上角：贴邮票处 ── */
-  const stampSize = 60; // ~16mm
-  const stampX = w - pad - stampSize;
-  const stampY = pad;
-  ctx.strokeStyle = '#DC2626';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(stampX, stampY, stampSize, stampSize);
-
-  ctx.fillStyle = '#DC2626';
-  ctx.font = `${fs * 0.65}px ${settings.fontFamily}`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('贴邮票处', stampX + stampSize / 2, stampY + stampSize / 2);
-
-  /* ── 收件人邮编（右上角、贴邮票处下方） ── */
-  if (recipient.postcode) {
-    const rZipY = stampY + stampSize + 10;
-    const rZipX = stampX + (stampSize - 6 * zipCellW) / 2;
-    for (let i = 0; i < 6; i++) {
-      ctx.strokeRect(rZipX + i * zipCellW, rZipY, zipCellW, zipCellH);
-    }
-    ctx.fillStyle = '#DC2626';
-    ctx.font = `500 ${fs * 0.85}px ${settings.fontFamily}`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    const rDigits = recipient.postcode.replace(/\D/g, '').slice(0, 6);
-    for (let i = 0; i < rDigits.length; i++) {
-      ctx.fillText(
-        rDigits[i],
-        rZipX + i * zipCellW + zipCellW / 2,
-        rZipY + zipCellH / 2
-      );
-    }
-  }
-
-  /* ── 收件人地址（中心区域） ── */
-  const recipX = w * 0.52;
-  const recipY = h * 0.35;
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-
-  // 收件人姓名
-  ctx.fillStyle = '#134E4A';
-  ctx.font = `600 ${fs * 1.25}px ${settings.fontFamily}`;
-  ctx.fillText(recipient.recipient || recipient.name, recipX, recipY);
-
-  // 收件人地址
-  const addrLines = recipient.address.split('\n').filter(Boolean);
-  ctx.font = `${fs * 1.05}px ${settings.fontFamily}`;
-  ctx.fillStyle = '#1F2937';
-  const lineH = fs * 1.8;
-  const addrStartY = recipY + 28;
-
-  if (addrLines.length === 0 && !recipient.address) {
-    // 空状态提示
-    ctx.fillStyle = '#D1D5DB';
-    ctx.font = `${fs * 0.9}px ${settings.fontFamily}`;
-    ctx.fillText('请填写收件人地址', midX, h * 0.55);
-  } else {
-    addrLines.forEach((line, i) => {
-      ctx.fillText(line, recipX, addrStartY + i * lineH);
-    });
-  }
-
-  // 收件人电话
-  const phoneY = addrStartY + (addrLines.length || 1) * lineH + 4;
-  if (recipient.phone) {
-    ctx.font = `${fs * 0.85}px ${settings.fontFamily}`;
-    ctx.fillStyle = '#6B7280';
-    ctx.fillText(recipient.phone, recipX, phoneY);
-  }
-
-  /* ── 寄件人姓名（右下角标注：寄） ── */
-  if (sender.name) {
-    ctx.textAlign = 'right';
-    ctx.font = `${fs * 0.7}px ${settings.fontFamily}`;
-    ctx.fillStyle = '#9CA3AF';
-    ctx.fillText(`${sender.name} 寄`, w - pad, h - pad);
   }
 }
 
