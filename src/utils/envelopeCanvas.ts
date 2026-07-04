@@ -87,9 +87,10 @@ function drawDomesticEnvelope(
   ctx.textBaseline = 'middle';
   ctx.fillText('贴邮票处', stampX + stampSize / 2, stampY + stampSize / 2);
 
-  /* ── 收件人地址（上部偏左） ── */
-  const recipX = pad + 10;
-  const recipAddrY = rZipY + zipCellH + 18;
+  /* ── 收件人名址区（中间区域，GB/T 22657.1-2008 §3.2.2） ── */
+  // 中间偏左：X 取宽度 30%~35%，Y 从上部 28% 开始（中间区域上方起笔）
+  const recipX = w * 0.30;
+  const recipAddrY = h * 0.30;
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
@@ -99,14 +100,14 @@ function drawDomesticEnvelope(
     ctx.font = `${fs}px ${settings.fontFamily}`;
     ctx.fillStyle = '#1F2937';
     addrLines.forEach((line, i) => {
-      ctx.fillText(line, recipX, recipAddrY + i * (fs * 1.5));
+      ctx.fillText(line, recipX, recipAddrY + i * (fs * 1.6));
     });
   }
 
-  /* ── 收件人姓名（中部偏左，大字号） ── */
-  const nameY = recipAddrY + (addrLines.length || 1) * (fs * 1.5) + 12;
+  /* ── 收件人姓名（中间区域中央，醒目大字号） ── */
+  const nameY = recipAddrY + (addrLines.length || 1) * (fs * 1.6) + 16;
   ctx.fillStyle = '#134E4A';
-  ctx.font = `600 ${fs * 1.35}px ${settings.fontFamily}`;
+  ctx.font = `600 ${fs * 1.45}px ${settings.fontFamily}`;
   const displayName = recipient.recipient || recipient.name || '';
   ctx.fillText(displayName + (displayName ? '（收）' : ''), recipX, nameY);
 
@@ -122,7 +123,7 @@ function drawDomesticEnvelope(
     ctx.fillStyle = '#D1D5DB';
     ctx.font = `${fs * 0.9}px ${settings.fontFamily}`;
     ctx.textAlign = 'center';
-    ctx.fillText('请填写收件人信息', w * 0.5, h * 0.55);
+    ctx.fillText('请填写收件人信息', w * 0.5, h * 0.50);
   }
 
   /* ── 寄件人地址（下部偏右） ── */
