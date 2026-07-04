@@ -3,6 +3,7 @@ export interface Address {
   name: string;
   recipient: string;
   address: string;
+  postcode?: string;
   phone?: string;
   tag?: 'home' | 'work' | 'family' | 'other';
   tagLabel?: string;

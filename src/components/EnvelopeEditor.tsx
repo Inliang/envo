@@ -24,7 +24,7 @@ export default function EnvelopeEditor() {
   const printRef = useRef<HTMLDivElement>(null);
   const [sender, setSender] = useState<SenderInfo>(settings.defaultSender);
   const [recipient, setRecipient] = useState<Address>(
-    currentRecipient || { id: '', name: '', recipient: '', address: '', phone: '', createdAt: '' }
+    currentRecipient || { id: '', name: '', recipient: '', address: '', phone: '', postcode: '', createdAt: '' }
   );
   const [amapSuggestions, setAmapSuggestions] = useState<{ name: string; address: string }[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -138,7 +138,7 @@ export default function EnvelopeEditor() {
   };
 
   const clearForm = () => {
-    setRecipient({ id: '', name: '', recipient: '', address: '', phone: '', createdAt: '' });
+    setRecipient({ id: '', name: '', recipient: '', address: '', phone: '', postcode: '', createdAt: '' });
     setAmapSuggestions([]);
     setShowSuggestions(false);
   };
@@ -259,12 +259,20 @@ export default function EnvelopeEditor() {
                 </div>
               )}
             </div>
-            <input
-              className="input-field"
-              placeholder="电话"
-              value={recipient.phone || ''}
-              onChange={(e) => setRecipient({ ...recipient, phone: e.target.value })}
-            />
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                className="input-field"
+                placeholder="电话"
+                value={recipient.phone || ''}
+                onChange={(e) => setRecipient({ ...recipient, phone: e.target.value })}
+              />
+              <input
+                className="input-field"
+                placeholder="邮编"
+                value={recipient.postcode || ''}
+                onChange={(e) => setRecipient({ ...recipient, postcode: e.target.value })}
+              />
+            </div>
           </div>
         </div>
 
