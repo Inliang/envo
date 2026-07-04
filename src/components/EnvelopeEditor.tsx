@@ -24,7 +24,7 @@ export default function EnvelopeEditor() {
   const printRef = useRef<HTMLDivElement>(null);
   const [sender, setSender] = useState<SenderInfo>(settings.defaultSender);
   const [recipient, setRecipient] = useState<Address>(
-    currentRecipient || { id: '', name: '', recipient: '', address: '', phone: '' }
+    currentRecipient || { id: '', name: '', recipient: '', address: '', phone: '', createdAt: '' }
   );
   const [amapSuggestions, setAmapSuggestions] = useState<{ name: string; address: string }[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -138,7 +138,7 @@ export default function EnvelopeEditor() {
   };
 
   const clearForm = () => {
-    setRecipient({ id: '', name: '', recipient: '', address: '', phone: '' });
+    setRecipient({ id: '', name: '', recipient: '', address: '', phone: '', createdAt: '' });
     setAmapSuggestions([]);
     setShowSuggestions(false);
   };
@@ -282,10 +282,20 @@ export default function EnvelopeEditor() {
                 value={currentEnvelope.size}
                 onChange={(e) => setCurrentEnvelope({ size: e.target.value as EnvelopeSettings['size'] })}
               >
-                <option value="DL">DL (220x110mm)</option>
-                <option value="C5">C5 (229x162mm)</option>
-                <option value="C4">C4 (324x229mm)</option>
-                <option value="C6">C6 (162x114mm)</option>
+                <optgroup label="── 国内信封 ──">
+                  {Object.entries(ENVELOPE_SIZES)
+                    .filter(([, cfg]) => cfg.category === 'domestic')
+                    .map(([key, cfg]) => (
+                      <option key={key} value={key}>{cfg.label}</option>
+                    ))}
+                </optgroup>
+                <optgroup label="── 国际信封 ──">
+                  {Object.entries(ENVELOPE_SIZES)
+                    .filter(([k, cfg]) => cfg.category === 'international' && k !== 'custom')
+                    .map(([key, cfg]) => (
+                      <option key={key} value={key}>{cfg.label}</option>
+                    ))}
+                </optgroup>
                 <option value="custom">自定义</option>
               </select>
             </div>
