@@ -13,6 +13,7 @@ interface AppState {
 
   setActiveTab: (tab: TabKey) => void;
   addAddress: (addr: Omit<Address, 'id' | 'createdAt'>) => void;
+  addAddresses: (addrs: Omit<Address, 'id' | 'createdAt'>[]) => void;
   updateAddress: (id: string, updates: Partial<Address>) => void;
   deleteAddress: (id: string) => void;
   addPrintRecord: (record: Omit<PrintRecord, 'id' | 'printedAt'>) => void;
@@ -69,6 +70,16 @@ export const useStore = create<AppState>()(
           createdAt: new Date().toISOString(),
         };
         set((s) => ({ addresses: [...s.addresses, newAddr] }));
+      },
+
+      addAddresses: (addrs) => {
+        const now = new Date().toISOString();
+        const newAddrs: Address[] = addrs.map((addr) => ({
+          ...addr,
+          id: genId(),
+          createdAt: now,
+        }));
+        set((s) => ({ addresses: [...s.addresses, ...newAddrs] }));
       },
 
       updateAddress: (id, updates) =>

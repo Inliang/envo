@@ -6,6 +6,7 @@ export function exportAddressesToExcel(addresses: Address[]): void {
     '姓名': a.name,
     '收件人': a.recipient,
     '地址': a.address,
+    '邮编': a.postcode || '',
     '电话': a.phone || '',
     '标签': a.tagLabel || a.tag || '',
     '创建时间': new Date(a.createdAt).toLocaleString('zh-CN'),
