@@ -21,6 +21,11 @@ AIGC:
 
 ## 2026-07-05
 
+### Changed
+- **收件人邮编位置上移左移**：rZipX 从 0.09w 左移至 0.0w（左移 2 格），rZipY 从 0.10h 上移至 -0.009h（上移 1 格）。
+- **收件人地址左移**：recipX 从 0.25w 左移至 0.16w（左移 2 格）。
+- **页脚添加外部链接**：页面底部新增 github.com/Inliang/envo 和 inliang.github.io/fmo-secondary 两个链接。
+
 ### Added
 - **地址簿邮编字段**：新增/编辑地址时增加邮编输入框，地址卡片上展示邮编信息。导出 Excel 同步增加邮编列。
 - **地址簿导入功能**：支持 CSV/XLSX/JSON 文件批量导入地址。自动识别中英文列名（姓名/name、地址/address、邮编/postcode、电话/phone、标签/tag），解析后预览确认再写入地址簿。导入按钮位于地址簿顶部工具栏。
