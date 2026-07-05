@@ -51,6 +51,11 @@
   }
 }
 
+/* 打印区默认隐藏，仅在打印时显示 */
+.print-area {
+  display: none;
+}
+
 @media print {
   body * {
     visibility: hidden;
@@ -63,5 +68,6 @@
     left: 0;
     top: 0;
     width: 100%;
+    display: block !important;
   }
 }

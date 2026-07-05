@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { useStore } from '../store';
 import { drawEnvelope, canvasToBlob } from '../utils/envelopeCanvas';
 import { ENVELOPE_SIZES } from '../store/types';
@@ -146,10 +146,37 @@ export default function EnvelopeEditor() {
     }
   };
 
+  const pageStyle = useMemo(() => {
+    const cfg = ENVELOPE_SIZES[currentEnvelope.size];
+    const w = currentEnvelope.size === 'custom' ? (currentEnvelope.customWidth || cfg.width) : cfg.width;
+    const h = currentEnvelope.size === 'custom' ? (currentEnvelope.customHeight || cfg.height) : cfg.height;
+    return `@page { size: ${w}mm ${h}mm; margin: 0; }`;
+  }, [currentEnvelope.size, currentEnvelope.customWidth, currentEnvelope.customHeight]);
+
   const handlePrint = useReactToPrint({
     contentRef: printRef,
     documentTitle: `信封_${recipient.recipient || '打印'}`,
+    pageStyle,
+    onBeforePrint: () => {
+      return new Promise<void>((resolve) => {
+        // cloneNode 不复制 canvas 像素缓冲区，先转为 <img> 再打印
+        if (printCanvasRef.current && printRef.current) {
+          const img = document.createElement('img');
+          img.src = printCanvasRef.current.toDataURL('image/png', 1.0);
+          img.style.width = '100%';
+          img.style.display = 'block';
+          printRef.current.innerHTML = '';
+          printRef.current.appendChild(img);
+        }
+        resolve();
+      });
+    },
     onAfterPrint: () => {
+      // 恢复 canvas 到 DOM（像素缓冲区仍保留）
+      if (printRef.current && printCanvasRef.current) {
+        printRef.current.innerHTML = '';
+        printRef.current.appendChild(printCanvasRef.current);
+      }
       addPrintRecord({ recipient, sender, settings: currentEnvelope, type: 'print' });
       setMsg({ text: '打印完成，已记录到历史', type: 'ok' });
     },
@@ -461,7 +488,7 @@ export default function EnvelopeEditor() {
         </div>
 
         {/* Hidden print area — 使用无红框的打印专用 Canvas */}
-        <div ref={printRef} className="print-area" style={{ display: 'none' }}>
+        <div ref={printRef} className="print-area">
           <canvas ref={printCanvasRef} id="print-canvas" />
         </div>
       </div>
