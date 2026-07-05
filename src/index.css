@@ -70,7 +70,10 @@
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
   }
   select.input-field {
-    @apply appearance-none bg-[url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%2364748b'%3E%3Cpath d='m3 5 3 3 3-3'/%3E%3C/svg%3E")] bg-[length:12px] bg-[right_12px_center] bg-no-repeat pr-9;
+    @apply appearance-none bg-no-repeat pr-9;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%2364748b'%3E%3Cpath d='m3 5 3 3 3-3'/%3E%3C/svg%3E");
+    background-size: 12px;
+    background-position: right 12px center;
   }
 }
 
