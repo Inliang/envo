@@ -83,8 +83,8 @@ function drawDomesticEnvelope(
   // Recipient name area
   const nameY = Math.round(h * 0.48);       // ~53mm from top
 
-  // Sender info area (center-bottom, above postal code)
-  const senderX = Math.round(w * 0.50);     // centered
+  // Sender info area (bottom-right, above postal code)
+  const senderX = Math.round(w * 0.90);     // right-aligned near right edge
   const senderBaseY = Math.round(h * 0.72); // bottom area, above postal code
 
   // Sender postcode grid (bottom-right, moved left from docx)
@@ -185,10 +185,10 @@ function drawDomesticEnvelope(
   }
 
   /* ═══════════════════════════════════════
-   *  寄件人信息区（底部居中，邮编上方）
+   *  寄件人信息区（右下角，邮编上方，右对齐）
    * ═══════════════════════════════════════ */
   if (settings.showReturnAddress && (sender.name || sender.address)) {
-    ctx.textAlign = 'center';
+    ctx.textAlign = 'right';
     ctx.textBaseline = 'top';
     ctx.font = `${F.sender}px ${settings.fontFamily}`;
     ctx.fillStyle = '#6B7280';
