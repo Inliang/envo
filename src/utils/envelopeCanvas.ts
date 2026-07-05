@@ -83,9 +83,9 @@ function drawDomesticEnvelope(
   // Recipient name area
   const nameY = Math.round(h * 0.48);       // ~53mm from top
 
-  // Sender info area (bottom)
-  const senderX = Math.round(w * 0.23);     // ~51mm from left
-  const senderBaseY = Math.round(h * 0.73); // ~80mm from top
+  // Sender info area (center-bottom, above postal code)
+  const senderX = Math.round(w * 0.50);     // centered
+  const senderBaseY = Math.round(h * 0.72); // bottom area, above postal code
 
   // Sender postcode grid (bottom-right, moved left from docx)
   const sZipCellW = Math.round(w * 0.03);   // ~6.6mm each
@@ -185,10 +185,10 @@ function drawDomesticEnvelope(
   }
 
   /* ═══════════════════════════════════════
-   *  寄件人信息区（下部）
+   *  寄件人信息区（底部居中，邮编上方）
    * ═══════════════════════════════════════ */
   if (settings.showReturnAddress && (sender.name || sender.address)) {
-    ctx.textAlign = 'left';
+    ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.font = `${F.sender}px ${settings.fontFamily}`;
     ctx.fillStyle = '#6B7280';
