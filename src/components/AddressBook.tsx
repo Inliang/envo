@@ -14,6 +14,7 @@ export default function AddressBook() {
     currentEnvelope,
     addAddress,
     addAddresses,
+    updateAddress,
     deleteAddress,
     setCurrentRecipient,
     setActiveTab,
@@ -33,6 +34,15 @@ export default function AddressBook() {
   const [newPostcode, setNewPostcode] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [newTag, setNewTag] = useState<string>('');
+
+  // Edit state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editRecipient, setEditRecipient] = useState('');
+  const [editAddr, setEditAddr] = useState('');
+  const [editPostcode, setEditPostcode] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editTag, setEditTag] = useState<string>('');
 
   // Import state
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
@@ -81,6 +91,40 @@ export default function AddressBook() {
   const handleUseAddress = (addr: Address) => {
     setCurrentRecipient(addr);
     setActiveTab('editor');
+  };
+
+  // --- Edit ---
+  const startEdit = (addr: Address) => {
+    setEditingId(addr.id);
+    setEditName(addr.name);
+    setEditRecipient(addr.recipient);
+    setEditAddr(addr.address);
+    setEditPostcode(addr.postcode || '');
+    setEditPhone(addr.phone || '');
+    setEditTag(addr.tag || '');
+  };
+
+  const handleEditSave = () => {
+    if (!editingId || !editName || !editAddr) return;
+    updateAddress(editingId, {
+      name: editName,
+      recipient: editRecipient || editName,
+      address: editAddr,
+      postcode: editPostcode || undefined,
+      phone: editPhone || undefined,
+      tag: (editTag as Address['tag']) || undefined,
+    });
+    cancelEdit();
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditName('');
+    setEditRecipient('');
+    setEditAddr('');
+    setEditPostcode('');
+    setEditPhone('');
+    setEditTag('');
   };
 
   // --- Selection ---
@@ -437,54 +481,124 @@ export default function AddressBook() {
                 selectedIds.has(addr.id) ? 'ring-2 ring-brand-400' : ''
               }`}
             >
-              <div className="flex items-start gap-2 mb-2">
-                <input
-                  type="checkbox"
-                  checked={selectedIds.has(addr.id)}
-                  onChange={() => toggleSelect(addr.id)}
-                  className="mt-1 h-4 w-4 rounded border-brand-300 text-brand-600 focus:ring-brand-500 cursor-pointer"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center flex-wrap gap-2">
-                    <span className="font-semibold text-brand-800">{addr.name}</span>
-                    {addr.recipient !== addr.name && (
-                      <span className="text-sm text-brand-400">{addr.recipient}</span>
-                    )}
-                    {addr.tag && (
-                      <span
-                        className={`tag text-xs ${TAG_COLORS[addr.tag] || TAG_COLORS.other}`}
-                      >
-                        {addr.tagLabel || tagLabels[addr.tag]}
-                      </span>
-                    )}
+              {editingId === addr.id ? (
+                /* --- Edit Form --- */
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-brand-700">编辑地址</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <input
+                      className="input-field"
+                      placeholder="姓名 *"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                    />
+                    <input
+                      className="input-field"
+                      placeholder="单位/公司"
+                      value={editRecipient}
+                      onChange={(e) => setEditRecipient(e.target.value)}
+                    />
+                  </div>
+                  <textarea
+                    className="input-field resize-none"
+                    placeholder="地址 *"
+                    rows={2}
+                    value={editAddr}
+                    onChange={(e) => setEditAddr(e.target.value)}
+                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <input
+                      className="input-field"
+                      placeholder="邮编"
+                      value={editPostcode}
+                      onChange={(e) => setEditPostcode(e.target.value)}
+                    />
+                    <input
+                      className="input-field"
+                      placeholder="电话"
+                      value={editPhone}
+                      onChange={(e) => setEditPhone(e.target.value)}
+                    />
+                    <select
+                      className="input-field"
+                      value={editTag}
+                      onChange={(e) => setEditTag(e.target.value)}
+                    >
+                      <option value="">选择标签</option>
+                      <option value="home">家</option>
+                      <option value="work">公司</option>
+                      <option value="family">亲友</option>
+                      <option value="other">其他</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={handleEditSave} className="btn-primary text-sm">
+                      保存
+                    </button>
+                    <button onClick={cancelEdit} className="btn-outline text-sm">
+                      取消
+                    </button>
                   </div>
                 </div>
-              </div>
-              <p className="text-sm text-brand-600 mb-2 ml-6">{addr.address}</p>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 ml-6 mb-2">
-                {addr.postcode && (
-                  <span className="text-xs text-brand-400">邮编: {addr.postcode}</span>
-                )}
-                {addr.phone && (
-                  <span className="text-xs text-brand-400">电话: {addr.phone}</span>
-                )}
-              </div>
-              <div className="flex gap-2 mt-3 pt-3 border-t border-brand-50 ml-6">
-                <button
-                  onClick={() => handleUseAddress(addr)}
-                  className="text-xs text-brand-500 hover:text-brand-700 font-medium"
-                >
-                  打印此信封
-                </button>
-                <button
-                  onClick={() => {
-                    if (window.confirm('确定删除此地址？')) deleteAddress(addr.id);
-                  }}
-                  className="text-xs text-red-400 hover:text-red-600 ml-auto"
-                >
-                  删除
-                </button>
-              </div>
+              ) : (
+                /* --- Normal Card --- */
+                <>
+                  <div className="flex items-start gap-2 mb-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(addr.id)}
+                      onChange={() => toggleSelect(addr.id)}
+                      className="mt-1 h-4 w-4 rounded border-brand-300 text-brand-600 focus:ring-brand-500 cursor-pointer"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center flex-wrap gap-2">
+                        <span className="font-semibold text-brand-800">{addr.name}</span>
+                        {addr.recipient !== addr.name && (
+                          <span className="text-sm text-brand-400">{addr.recipient}</span>
+                        )}
+                        {addr.tag && (
+                          <span
+                            className={`tag text-xs ${TAG_COLORS[addr.tag] || TAG_COLORS.other}`}
+                          >
+                            {addr.tagLabel || tagLabels[addr.tag]}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-sm text-brand-600 mb-2 ml-6">{addr.address}</p>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 ml-6 mb-2">
+                    {addr.postcode && (
+                      <span className="text-xs text-brand-400">邮编: {addr.postcode}</span>
+                    )}
+                    {addr.phone && (
+                      <span className="text-xs text-brand-400">电话: {addr.phone}</span>
+                    )}
+                  </div>
+                  <div className="flex gap-2 mt-3 pt-3 border-t border-brand-50 ml-6">
+                    <button
+                      onClick={() => handleUseAddress(addr)}
+                      className="text-xs text-brand-500 hover:text-brand-700 font-medium"
+                    >
+                      打印此信封
+                    </button>
+                    <button
+                      onClick={() => startEdit(addr)}
+                      className="text-xs text-brand-500 hover:text-brand-700 font-medium"
+                    >
+                      编辑
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (window.confirm('确定删除此地址？')) deleteAddress(addr.id);
+                      }}
+                      className="text-xs text-red-400 hover:text-red-600 ml-auto"
+                    >
+                      删除
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           ))}
         </div>
