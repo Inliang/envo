@@ -104,23 +104,22 @@ export default function EnvelopeEditor() {
     [getAmapKey]
   );
 
-  const selectAmapSuggestion = (idx: number) => {
+  const selectAmapSuggestion = async (idx: number) => {
     const s = amapSuggestions[idx];
     if (!s) return;
 
-    // 构建完整地址：address > district > name 逐级兜底
-    // 末尾去重：如果基础字符串已以 name 结尾，不重复拼接
+    // 构建完整地址：district（省市区路径） + (address || name)，去重
+    const district = s.district || '';
+    const detail = s.address || s.name;
     let full: string;
-    const base = s.address || s.district || '';
-    if (base) {
-      full = base.endsWith(s.name) ? base : `${base}${s.name}`;
+    if (district) {
+      full = district.endsWith(detail) ? district : `${district}${detail}`;
     } else {
-      full = s.name;
+      full = detail;
     }
 
     setRecipient((r) => {
       const updates: Partial<Address> = { address: full };
-      // 如果 API 返回了邮编数据，自动填入
       if (s.postcode && s.postcode.length > 0) {
         updates.postcode = s.postcode;
       }
@@ -128,6 +127,28 @@ export default function EnvelopeEditor() {
     });
     setShowSuggestions(false);
     setAmapSuggestions([]);
+
+    // 如果 tips 未返回邮编，通过逆地理编码 API 查询
+    if ((!s.postcode || s.postcode.length === 0) && s.location) {
+      const amapKey = getAmapKey();
+      if (amapKey) {
+        try {
+          const regeoRes = await fetch(
+            `https://restapi.amap.com/v3/geocode/regeo?key=${amapKey}&location=${s.location}&extensions=base`
+          );
+          const regeoData = await regeoRes.json();
+          if (regeoData.status === '1' && regeoData.regeocode?.addressComponent) {
+            const ac = regeoData.regeocode.addressComponent;
+            const postcode = ac.postcode || ac.towncode || '';
+            if (postcode) {
+              setRecipient((r) => ({ ...r, postcode }));
+            }
+          }
+        } catch {
+          // regeo 失败静默忽略，不影响地址填充
+        }
+      }
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
