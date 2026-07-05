@@ -250,75 +250,94 @@ export default function EnvelopeEditor() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
       {/* Left Panel - Form */}
-      <div className="lg:col-span-2 space-y-5">
+      <div className="lg:col-span-2 space-y-4">
         {/* Sender Card */}
         <div className="card-bento p-5">
-          <h2 className="text-sm font-semibold text-brand-700 mb-4 flex items-center gap-2">
-            <span className="w-1.5 h-4 bg-brand-500 rounded-full" />
+          <h2 className="section-title">
+            <span className="section-dot bg-slate-400" />
             寄件人信息
           </h2>
           <div className="space-y-3">
-            <input
-              className="input-field"
-              placeholder="姓名"
-              value={sender.name}
-              onChange={(e) => setSender({ ...sender, name: e.target.value })}
-            />
-            <textarea
-              className="input-field resize-none"
-              placeholder="地址"
-              rows={2}
-              value={sender.address}
-              onChange={(e) => setSender({ ...sender, address: e.target.value })}
-            />
+            <div>
+              <label className="input-label">姓名</label>
+              <input
+                className="input-field"
+                placeholder="寄件人姓名"
+                value={sender.name}
+                onChange={(e) => setSender({ ...sender, name: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="input-label">地址</label>
+              <textarea
+                className="input-field resize-none"
+                placeholder="寄件人地址"
+                rows={2}
+                value={sender.address}
+                onChange={(e) => setSender({ ...sender, address: e.target.value })}
+              />
+            </div>
             <div className="grid grid-cols-2 gap-3">
-              <input
-                className="input-field"
-                placeholder="电话"
-                value={sender.phone || ''}
-                onChange={(e) => setSender({ ...sender, phone: e.target.value })}
-              />
-              <input
-                className="input-field"
-                placeholder="邮编"
-                value={sender.postcode || ''}
-                onChange={(e) => setSender({ ...sender, postcode: e.target.value })}
-              />
+              <div>
+                <label className="input-label">电话</label>
+                <input
+                  className="input-field"
+                  placeholder="联系电话"
+                  value={sender.phone || ''}
+                  onChange={(e) => setSender({ ...sender, phone: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="input-label">邮编</label>
+                <input
+                  className="input-field"
+                  placeholder="邮政编码"
+                  value={sender.postcode || ''}
+                  onChange={(e) => setSender({ ...sender, postcode: e.target.value })}
+                />
+              </div>
             </div>
           </div>
         </div>
 
         {/* Recipient Card */}
-        <div className="card-bento p-5">
+        <div className="card-bento p-5 ring-1 ring-cta-200/30">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-brand-700 flex items-center gap-2">
-              <span className="w-1.5 h-4 bg-cta-500 rounded-full" />
+            <h2 className="section-title !mb-0">
+              <span className="section-dot bg-cta-500" />
               收件人信息
             </h2>
             <button
               onClick={() => { setCurrentRecipient(null); setActiveTab('addressbook'); }}
-              className="text-xs text-brand-500 hover:text-brand-700 transition-colors"
+              className="btn-ghost text-xs"
             >
-              + 从地址簿选择
+              + 地址簿
             </button>
           </div>
           <div className="space-y-3">
-            <input
-              className="input-field"
-              placeholder="姓名"
-              value={recipient.name}
-              onChange={(e) => setRecipient({ ...recipient, name: e.target.value })}
-            />
-            <input
-              className="input-field"
-              placeholder="收件人（单位/公司名）"
-              value={recipient.recipient}
-              onChange={(e) => setRecipient({ ...recipient, recipient: e.target.value })}
-            />
+            <div>
+              <label className="input-label">姓名</label>
+              <input
+                className="input-field"
+                placeholder="收件人姓名"
+                value={recipient.name}
+                onChange={(e) => setRecipient({ ...recipient, name: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="input-label">单位 / 公司</label>
+              <input
+                className="input-field"
+                placeholder="单位或公司名称"
+                value={recipient.recipient}
+                onChange={(e) => setRecipient({ ...recipient, recipient: e.target.value })}
+              />
+            </div>
             <div className="relative">
+              <label className="input-label">地址</label>
               <textarea
                 className="input-field resize-none pr-8"
-                placeholder="地址（输入关键词自动联想）"
+                placeholder="输入地址关键词自动联想…"
                 rows={3}
                 value={recipient.address}
                 onChange={(e) => handleAddressInput(e.target.value)}
@@ -327,49 +346,55 @@ export default function EnvelopeEditor() {
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
               />
               {showSuggestions && (
-                <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-brand-200 rounded-xl shadow-lg z-50 max-h-48 overflow-auto">
+                <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 max-h-52 overflow-auto">
                   {amapSuggestions.map((s, i) => (
                     <button
                       key={i}
                       type="button"
-                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-brand-50 transition-colors ${
-                        i === selectedSuggestionIdx ? 'bg-brand-50' : ''
+                      className={`w-full text-left px-4 py-2.5 text-sm transition-colors border-b border-slate-50 last:border-0 ${
+                        i === selectedSuggestionIdx ? 'bg-brand-50 text-brand-800' : 'hover:bg-slate-50 text-slate-700'
                       }`}
                       onMouseDown={(e) => { e.preventDefault(); selectAmapSuggestion(i); }}
                     >
-                      <div className="font-medium text-brand-800">{s.name}</div>
-                      {s.address && <div className="text-xs text-brand-400 mt-0.5">{s.address}</div>}
+                      <div className="font-semibold">{s.name}</div>
+                      {s.address && <div className="text-xs text-slate-500 mt-0.5 truncate">{s.address}</div>}
                     </button>
                   ))}
                 </div>
               )}
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <input
-                className="input-field"
-                placeholder="电话"
-                value={recipient.phone || ''}
-                onChange={(e) => setRecipient({ ...recipient, phone: e.target.value })}
-              />
-              <input
-                className="input-field"
-                placeholder="邮编"
-                value={recipient.postcode || ''}
-                onChange={(e) => setRecipient({ ...recipient, postcode: e.target.value })}
-              />
+              <div>
+                <label className="input-label">电话</label>
+                <input
+                  className="input-field"
+                  placeholder="联系电话"
+                  value={recipient.phone || ''}
+                  onChange={(e) => setRecipient({ ...recipient, phone: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="input-label">邮编</label>
+                <input
+                  className="input-field"
+                  placeholder="邮政编码"
+                  value={recipient.postcode || ''}
+                  onChange={(e) => setRecipient({ ...recipient, postcode: e.target.value })}
+                />
+              </div>
             </div>
           </div>
         </div>
 
         {/* Envelope Settings */}
         <div className="card-bento p-5">
-          <h2 className="text-sm font-semibold text-brand-700 mb-4 flex items-center gap-2">
-            <span className="w-1.5 h-4 bg-brand-500 rounded-full" />
+          <h2 className="section-title">
+            <span className="section-dot bg-brand-500" />
             信封设置
           </h2>
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div>
-              <label className="text-xs text-brand-500 mb-1 block">信封规格</label>
+              <label className="input-label">规格</label>
               <select
                 className="input-field"
                 value={currentEnvelope.size}
@@ -389,37 +414,43 @@ export default function EnvelopeEditor() {
                       <option key={key} value={key}>{cfg.label}</option>
                     ))}
                 </optgroup>
-                <option value="custom">自定义</option>
+                <option value="custom">自定义尺寸</option>
               </select>
             </div>
             {currentEnvelope.size === 'custom' && (
               <div className="grid grid-cols-2 gap-3">
-                <input
-                  className="input-field"
-                  type="number"
-                  placeholder="宽度(mm)"
-                  value={currentEnvelope.customWidth || ''}
-                  onChange={(e) => setCurrentEnvelope({ customWidth: Number(e.target.value) })}
-                />
-                <input
-                  className="input-field"
-                  type="number"
-                  placeholder="高度(mm)"
-                  value={currentEnvelope.customHeight || ''}
-                  onChange={(e) => setCurrentEnvelope({ customHeight: Number(e.target.value) })}
-                />
+                <div>
+                  <label className="input-label">宽度 (mm)</label>
+                  <input
+                    className="input-field"
+                    type="number"
+                    placeholder="220"
+                    value={currentEnvelope.customWidth || ''}
+                    onChange={(e) => setCurrentEnvelope({ customWidth: Number(e.target.value) })}
+                  />
+                </div>
+                <div>
+                  <label className="input-label">高度 (mm)</label>
+                  <input
+                    className="input-field"
+                    type="number"
+                    placeholder="110"
+                    value={currentEnvelope.customHeight || ''}
+                    onChange={(e) => setCurrentEnvelope({ customHeight: Number(e.target.value) })}
+                  />
+                </div>
               </div>
             )}
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-brand-600">显示寄件人地址</span>
+            <div className="flex items-center justify-between py-1">
+              <span className="text-sm text-slate-600 font-medium">显示寄件人地址</span>
               <button
                 onClick={() => setCurrentEnvelope({ showReturnAddress: !currentEnvelope.showReturnAddress })}
-                className={`w-11 h-6 rounded-full transition-colors ${
-                  currentEnvelope.showReturnAddress ? 'bg-brand-500' : 'bg-gray-200'
+                className={`w-11 h-6 rounded-full transition-all duration-200 ${
+                  currentEnvelope.showReturnAddress ? 'bg-brand-500' : 'bg-slate-300'
                 } relative`}
               >
                 <span
-                  className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                  className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
                     currentEnvelope.showReturnAddress ? 'translate-x-[22px]' : 'translate-x-0.5'
                   }`}
                 />
@@ -429,17 +460,17 @@ export default function EnvelopeEditor() {
         </div>
 
         {/* Actions */}
-        <div className="flex flex-wrap gap-3">
-          <button onClick={handlePrint} className="btn-primary flex-1 min-w-[120px]">
-            🖨 打印
+        <div className="flex flex-wrap gap-2.5">
+          <button onClick={handlePrint} className="btn-primary flex-1 min-w-[100px]">
+            打印信封
           </button>
-          <button onClick={handleExportPDF} disabled={printMode === 'pdf'} className="btn-outline flex-1 min-w-[120px]">
-            📄 导出PDF
+          <button onClick={handleExportPDF} disabled={printMode === 'pdf'} className="btn-outline flex-1 min-w-[100px]">
+            导出 PDF
           </button>
           <button onClick={saveAsAddress} className="btn-outline">
-            💾 存地址簿
+            存地址簿
           </button>
-          <button onClick={clearForm} className="text-sm text-brand-400 hover:text-brand-600 transition-colors px-2">
+          <button onClick={clearForm} className="btn-ghost ml-auto">
             清空
           </button>
         </div>
@@ -447,58 +478,60 @@ export default function EnvelopeEditor() {
         {/* Message */}
         {msg && (
           <div
-            className={`text-sm px-4 py-2.5 rounded-xl ${
-              msg.type === 'ok' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+            className={`text-sm px-4 py-3 rounded-xl border flex items-center justify-between ${
+              msg.type === 'ok'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                : 'bg-red-50 border-red-200 text-red-700'
             }`}
           >
-            {msg.text}
-            <button onClick={() => setMsg(null)} className="ml-3 text-sm opacity-60 hover:opacity-100">×</button>
+            <span>{msg.text}</span>
+            <button onClick={() => setMsg(null)} className="text-lg leading-none opacity-50 hover:opacity-80 ml-3">&times;</button>
           </div>
         )}
       </div>
 
       {/* Right Panel - Canvas Preview */}
       <div className="lg:col-span-3">
-        <div className="card-bento p-5 sticky top-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-brand-700 flex items-center gap-2">
-              <span className="w-1.5 h-4 bg-brand-500 rounded-full" />
+        <div className="card-bento p-6 sticky top-6">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="section-title !mb-0">
+              <span className="section-dot bg-emerald-500" />
               实时预览
             </h2>
-            <span className="text-xs text-brand-400">
-              {sizeConfig.width}×{sizeConfig.height}mm
+            <span className="text-xs font-mono text-slate-400 bg-slate-100 px-2.5 py-1 rounded-lg">
+              {sizeConfig.width} × {sizeConfig.height} mm
             </span>
           </div>
-          <div className="flex justify-center bg-brand-50/50 rounded-xl p-4 overflow-auto">
+          <div className="flex justify-center bg-slate-50/70 rounded-xl p-5 overflow-auto border border-slate-100">
             <canvas
               ref={canvasRef}
-              className="max-w-full shadow-lg rounded-lg"
-              style={{ maxHeight: '520px' }}
+              className="max-w-full shadow-md rounded-md"
+              style={{ maxHeight: '540px' }}
             />
           </div>
 
           {/* Address bar for quick selection */}
           {addresses.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-brand-100">
-              <p className="text-xs text-brand-400 mb-2">快捷选择地址簿</p>
+            <div className="mt-5 pt-4 border-t border-slate-100">
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">快捷地址簿</p>
               <div className="flex flex-wrap gap-2">
                 {addresses.slice(0, 6).map((addr) => (
                   <button
                     key={addr.id}
                     onClick={() => loadFromAddressbook(addr)}
-                    className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${
+                    className={`text-xs px-3 py-1.5 rounded-lg border transition-all duration-150 ${
                       currentRecipient?.id === addr.id
-                        ? 'border-brand-500 bg-brand-50 text-brand-700'
-                        : 'border-brand-100 text-brand-600 hover:border-brand-300'
+                        ? 'border-brand-400 bg-brand-50 text-brand-700 shadow-sm'
+                        : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
                     }`}
                   >
-                    {addr.name}
+                    {addr.name || addr.recipient || '(未命名)'}
                   </button>
                 ))}
                 {addresses.length > 6 && (
                   <button
                     onClick={() => setActiveTab('addressbook')}
-                    className="text-xs px-3 py-1.5 text-brand-400 hover:text-brand-600"
+                    className="text-xs px-3 py-1.5 text-slate-400 hover:text-brand-600 transition-colors"
                   >
                     +{addresses.length - 6} 更多
                   </button>
@@ -508,7 +541,7 @@ export default function EnvelopeEditor() {
           )}
         </div>
 
-        {/* Hidden print area — 使用无红框的打印专用 Canvas */}
+        {/* Hidden print area */}
         <div ref={printRef} className="print-area">
           <canvas ref={printCanvasRef} id="print-canvas" />
         </div>

@@ -2,12 +2,14 @@
 AIGC:
     Label: "1"
     ContentProducer: 001191440300708461136T1XGW3
-    ProduceID: 4d32f127e120f5be24dadce57b263d70_5808be60781b11f1a8895254002afed2
-    ReservedCode1: XQfQJn5j670C9SwcDYalVNdzfbksWBqIsNIMD3w3InlXsOi92imBJ0lQDU3jKk7KmTp3rFc4/HI3kzS3uiw4mLZu3l9q2H/QW1eIZqgDTDw60Eezg2QsaXZ5dFSVhXKAgyTo7k1RrQboIuiV+C4uIr6h9ID8wjbHl3Lo9ZN8vAewKX/K8Rkwwf2CLVI=
+    ProduceID: 4d32f127e120f5be24dadce57b263d70_0b1bb2d0781e11f19641525400d9a7a1
+    ReservedCode1: /cQcDtJSbANIQdyfU3tVjSr/DRImX3KBdeNh53AA34av7kDj9iAKXZzseglSYWTZ+a8bHt7jAJuRIaSHn93YALPsuKSI4kgxRTQZi/rqTSAlyN3LSXX7F/tsrqQ0Cps/1qc22uNuMMq/KDxGCz73HaIygxFkQFHOZt4gvdBpPNwOxPDQkqHte0JcjR4=
     ContentPropagator: 001191440300708461136T1XGW3
-    PropagateID: 4d32f127e120f5be24dadce57b263d70_5808be60781b11f1a8895254002afed2
-    ReservedCode2: XQfQJn5j670C9SwcDYalVNdzfbksWBqIsNIMD3w3InlXsOi92imBJ0lQDU3jKk7KmTp3rFc4/HI3kzS3uiw4mLZu3l9q2H/QW1eIZqgDTDw60Eezg2QsaXZ5dFSVhXKAgyTo7k1RrQboIuiV+C4uIr6h9ID8wjbHl3Lo9ZN8vAewKX/K8Rkwwf2CLVI=
+    PropagateID: 4d32f127e120f5be24dadce57b263d70_0b1bb2d0781e11f19641525400d9a7a1
+    ReservedCode2: /cQcDtJSbANIQdyfU3tVjSr/DRImX3KBdeNh53AA34av7kDj9iAKXZzseglSYWTZ+a8bHt7jAJuRIaSHn93YALPsuKSI4kgxRTQZi/rqTSAlyN3LSXX7F/tsrqQ0Cps/1qc22uNuMMq/KDxGCz73HaIygxFkQFHOZt4gvdBpPNwOxPDQkqHte0JcjR4=
 ---
+
+
 
 
 
@@ -18,8 +20,16 @@ AIGC:
 ## 2026-07-05
 
 ### Fixed
+- **字号大幅提升**：参照 docx DL 信封打印模板，将所有 Canvas 元素字号从原来的 `fontSize * N` 相对缩放改为绝对 pt → px 转换（18pt 邮编、11pt 地址、24pt 姓名、10pt 寄件人、12pt 寄件人邮编），解决收件人地址/姓名/寄件人信息字号过小的问题。字号随信封尺寸等比缩放，`fontSize` 设置仍可作为微调乘数。
+- **所有元素位置重校准**：参照 docx 模板中各参数的 mm 坐标，将 Canvas 绘制位置从固定像素偏移改为宽高比例定位（收件人邮编 0.09w/0.10h、地址 0.25w/0.30h、姓名 0.48h、寄件人 0.23w/0.73h、寄件人邮编 0.74w/0.82h 等）。
+- **寄件人邮编红框左移**：寄件人邮编 6 格红框从 `w - pad - 6*cells`（约 0.86w）左移至 0.74w，解决太靠右的问题。邮编格子尺寸也改为比例计算。
+- **收件人姓名与电话同行**：参照 docx 模板，收件人电话不再另起一行，改为与姓名同行右对齐渲染。
 - **地址联想完整地址修复**：选中高德联想地址后，现在始终以 `district`（省市区路径，如"浙江省杭州市西湖区"）为前缀拼接详细地址（`address` 或 `name`），确保输入框显示完整地址格式"省+市+区+县+乡+街道+小区/村"。此前当 `address` 有值时直接使用而丢弃了 `district`，导致仅显示小区名等短地址。
 - **邮编自动填充增强**：选中联想地址后，若 `inputtips` API 未返回邮编，则自动调用 AMap 逆地理编码 API（`geocode/regeo`）根据经纬度查询邮编，填入收件人邮编框。regeo 失败时静默忽略，不影响地址填充。
+
+### Changed
+- **UI 整体美化**：卡片增加 hover 阴影过渡、渐变按钮（brand/cta）、输入框改为 `slate-50` 底色 + white focus 态、新增 `.input-label`/`.section-title`/`.section-dot`/`.btn-ghost` 组件类、select 添加自定义下拉箭头。
+- `drawDomesticEnvelope` 坐标系完全重构，改为基于参考模板的比例定位 + 绝对 pt 字号。
 
 ## 2026-07-04
 
@@ -45,6 +55,7 @@ AIGC:
 - `envelopeCanvas.ts` 拆分为 `drawDomesticEnvelope` / `drawInternationalEnvelope` 两函数
 - 收件人信息 X/Y 从固定像素改为比例定位（`w*0.30`, `h*0.30`）
 - 打印 Canvas 改为独立 `printCanvasRef`，由 `useEffect` 以 `forPrint=true` 绘制，不再复制预览 Canvas
+*（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*

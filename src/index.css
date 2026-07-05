@@ -25,29 +25,52 @@
 
 @layer components {
   .card-bento {
-    @apply bg-white rounded-2xl border border-brand-100 shadow-sm;
+    @apply bg-white rounded-2xl border border-slate-200/80 shadow-sm
+           hover:shadow-md transition-shadow duration-300;
   }
   .btn-primary {
-    @apply bg-brand-600 text-white px-5 py-2.5 rounded-xl font-medium
-           hover:bg-brand-700 active:scale-[0.98] transition-all duration-150
-           disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply bg-gradient-to-br from-brand-600 to-brand-700 text-white px-5 py-2.5
+           rounded-xl font-semibold text-sm shadow-sm shadow-brand-200/50
+           hover:from-brand-700 hover:to-brand-800 hover:shadow-md
+           active:scale-[0.98] transition-all duration-200
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-brand-600 disabled:hover:to-brand-700;
   }
   .btn-cta {
-    @apply bg-cta-500 text-white px-5 py-2.5 rounded-xl font-medium
-           hover:bg-cta-600 active:scale-[0.98] transition-all duration-150;
+    @apply bg-gradient-to-br from-cta-500 to-cta-600 text-white px-5 py-2.5
+           rounded-xl font-semibold text-sm shadow-sm shadow-cta-200/50
+           hover:from-cta-600 hover:to-cta-700 hover:shadow-md
+           active:scale-[0.98] transition-all duration-200;
   }
   .btn-outline {
-    @apply border border-brand-200 text-brand-700 px-5 py-2.5 rounded-xl font-medium
-           hover:bg-brand-50 active:scale-[0.98] transition-all duration-150;
+    @apply border border-slate-200 text-slate-700 px-5 py-2.5 rounded-xl
+           font-medium text-sm bg-white
+           hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900
+           active:scale-[0.98] transition-all duration-200;
+  }
+  .btn-ghost {
+    @apply px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500
+           hover:bg-slate-100 hover:text-slate-700 transition-colors duration-150;
   }
   .input-field {
-    @apply w-full px-4 py-2.5 bg-white border border-brand-200 rounded-xl
-           text-brand-900 placeholder-brand-300
-           focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent
-           transition-all duration-150;
+    @apply w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl
+           text-slate-800 placeholder-slate-400 text-sm
+           focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-400/60 focus:border-brand-300
+           transition-all duration-200;
+  }
+  .input-label {
+    @apply text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block;
+  }
+  .section-title {
+    @apply text-sm font-bold text-slate-800 mb-4 flex items-center gap-2;
+  }
+  .section-dot {
+    @apply w-1.5 h-4 rounded-full;
   }
   .tag {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  select.input-field {
+    @apply appearance-none bg-[url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%2364748b'%3E%3Cpath d='m3 5 3 3 3-3'/%3E%3C/svg%3E")] bg-[length:12px] bg-[right_12px_center] bg-no-repeat pr-9;
   }
 }
 
