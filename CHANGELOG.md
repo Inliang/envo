@@ -2,12 +2,14 @@
 AIGC:
     Label: "1"
     ContentProducer: 001191440300708461136T1XGW3
-    ProduceID: 4d32f127e120f5be24dadce57b263d70_0b1bb2d0781e11f19641525400d9a7a1
-    ReservedCode1: /cQcDtJSbANIQdyfU3tVjSr/DRImX3KBdeNh53AA34av7kDj9iAKXZzseglSYWTZ+a8bHt7jAJuRIaSHn93YALPsuKSI4kgxRTQZi/rqTSAlyN3LSXX7F/tsrqQ0Cps/1qc22uNuMMq/KDxGCz73HaIygxFkQFHOZt4gvdBpPNwOxPDQkqHte0JcjR4=
+    ProduceID: 4d32f127e120f5be24dadce57b263d70_9edaef8f782611f1b3d35254007bceed
+    ReservedCode1: b5/M5e4M6goyxoPu87cVUXQCb6WiYiDfgZdPCNSFucOA+q2n/b0JxOzdEnAPPll90DZedHqtM62b9ck/42A66u3txFg3hLsZWihf2lER8d990roWkUjIFx7pDOXb1gWnDKRErLrrt84NdspDJ6CQCYnHmXUt6vc+bLoJ5La9O6sUr6sCFiYdzUmc7HY=
     ContentPropagator: 001191440300708461136T1XGW3
-    PropagateID: 4d32f127e120f5be24dadce57b263d70_0b1bb2d0781e11f19641525400d9a7a1
-    ReservedCode2: /cQcDtJSbANIQdyfU3tVjSr/DRImX3KBdeNh53AA34av7kDj9iAKXZzseglSYWTZ+a8bHt7jAJuRIaSHn93YALPsuKSI4kgxRTQZi/rqTSAlyN3LSXX7F/tsrqQ0Cps/1qc22uNuMMq/KDxGCz73HaIygxFkQFHOZt4gvdBpPNwOxPDQkqHte0JcjR4=
+    PropagateID: 4d32f127e120f5be24dadce57b263d70_9edaef8f782611f1b3d35254007bceed
+    ReservedCode2: b5/M5e4M6goyxoPu87cVUXQCb6WiYiDfgZdPCNSFucOA+q2n/b0JxOzdEnAPPll90DZedHqtM62b9ck/42A66u3txFg3hLsZWihf2lER8d990roWkUjIFx7pDOXb1gWnDKRErLrrt84NdspDJ6CQCYnHmXUt6vc+bLoJ5La9O6sUr6sCFiYdzUmc7HY=
 ---
+
+
 
 
 
@@ -55,6 +57,7 @@ AIGC:
 - `envelopeCanvas.ts` 拆分为 `drawDomesticEnvelope` / `drawInternationalEnvelope` 两函数
 - 收件人信息 X/Y 从固定像素改为比例定位（`w*0.30`, `h*0.30`）
 - 打印 Canvas 改为独立 `printCanvasRef`，由 `useEffect` 以 `forPrint=true` 绘制，不再复制预览 Canvas
+*（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*
