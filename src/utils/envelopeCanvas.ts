@@ -67,8 +67,8 @@ function drawDomesticEnvelope(
   // Recipient postcode grid
   const rZipCellW = Math.round(w * 0.045); // ~10mm each
   const rZipCellH = Math.round(h * 0.109); // ~12mm each
-  const rZipX = Math.round(w * 0.0);       // moved left by 2 cells (0.09 - 2*0.045)
-  const rZipY = Math.round(h * -0.009);    // moved up by 1 cell (0.10 - 0.109)
+  const rZipX = Math.round(w * 0.09);      // ~20mm from left
+  const rZipY = Math.round(h * 0.10);      // ~11mm from top
 
   // Stamp area (top-right)
   const stampW = Math.round(w * 0.136);     // ~30mm
