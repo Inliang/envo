@@ -57,8 +57,16 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="text-center py-4 text-xs text-brand-300">
-        Envo v1.0.0 - 数据仅存储在本地浏览器
+      <footer className="text-center py-4 text-xs text-brand-300 flex flex-col gap-1">
+        <span>Envo v1.0.0 - 数据仅存储在本地浏览器</span>
+        <span className="flex justify-center gap-4">
+          <a href="https://github.com/Inliang/envo" target="_blank" rel="noopener noreferrer" className="hover:text-brand-500 underline underline-offset-2 transition-colors">
+            github.com/Inliang/envo
+          </a>
+          <a href="https://inliang.github.io/fmo-secondary/" target="_blank" rel="noopener noreferrer" className="hover:text-brand-500 underline underline-offset-2 transition-colors">
+            inliang.github.io/fmo-secondary
+          </a>
+        </span>
       </footer>
     </div>
   );
