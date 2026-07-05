@@ -2,16 +2,24 @@
 AIGC:
     Label: "1"
     ContentProducer: 001191440300708461136T1XGW3
-    ProduceID: 4d32f127e120f5be24dadce57b263d70_e340a11477b311f1a8895254002afed2
-    ReservedCode1: 8+pXVlstlBLlKLaN8kjApxIu4iGlN2oZNupsox9NRkiW41jqWwZLrjf1ox+74pqkcQfSLph4SVgjtOWRocOtSYtVV8XFBUDQaV0o82ju5JnlWVIAKdcCcbxW5vOawcbloTWZO/ZrcqXjrypFEm+KuEHMJvPyFpDajd+ZlG+JnOfiEbRAX41buYP9n2U=
+    ProduceID: 4d32f127e120f5be24dadce57b263d70_5808be60781b11f1a8895254002afed2
+    ReservedCode1: XQfQJn5j670C9SwcDYalVNdzfbksWBqIsNIMD3w3InlXsOi92imBJ0lQDU3jKk7KmTp3rFc4/HI3kzS3uiw4mLZu3l9q2H/QW1eIZqgDTDw60Eezg2QsaXZ5dFSVhXKAgyTo7k1RrQboIuiV+C4uIr6h9ID8wjbHl3Lo9ZN8vAewKX/K8Rkwwf2CLVI=
     ContentPropagator: 001191440300708461136T1XGW3
-    PropagateID: 4d32f127e120f5be24dadce57b263d70_e340a11477b311f1a8895254002afed2
-    ReservedCode2: 8+pXVlstlBLlKLaN8kjApxIu4iGlN2oZNupsox9NRkiW41jqWwZLrjf1ox+74pqkcQfSLph4SVgjtOWRocOtSYtVV8XFBUDQaV0o82ju5JnlWVIAKdcCcbxW5vOawcbloTWZO/ZrcqXjrypFEm+KuEHMJvPyFpDajd+ZlG+JnOfiEbRAX41buYP9n2U=
+    PropagateID: 4d32f127e120f5be24dadce57b263d70_5808be60781b11f1a8895254002afed2
+    ReservedCode2: XQfQJn5j670C9SwcDYalVNdzfbksWBqIsNIMD3w3InlXsOi92imBJ0lQDU3jKk7KmTp3rFc4/HI3kzS3uiw4mLZu3l9q2H/QW1eIZqgDTDw60Eezg2QsaXZ5dFSVhXKAgyTo7k1RrQboIuiV+C4uIr6h9ID8wjbHl3Lo9ZN8vAewKX/K8Rkwwf2CLVI=
 ---
 
 
 
+
+
 # Changelog
+
+## 2026-07-05
+
+### Fixed
+- **地址联想完整地址修复**：选中高德联想地址后，现在始终以 `district`（省市区路径，如"浙江省杭州市西湖区"）为前缀拼接详细地址（`address` 或 `name`），确保输入框显示完整地址格式"省+市+区+县+乡+街道+小区/村"。此前当 `address` 有值时直接使用而丢弃了 `district`，导致仅显示小区名等短地址。
+- **邮编自动填充增强**：选中联想地址后，若 `inputtips` API 未返回邮编，则自动调用 AMap 逆地理编码 API（`geocode/regeo`）根据经纬度查询邮编，填入收件人邮编框。regeo 失败时静默忽略，不影响地址填充。
 
 ## 2026-07-04
 
@@ -37,5 +45,6 @@ AIGC:
 - `envelopeCanvas.ts` 拆分为 `drawDomesticEnvelope` / `drawInternationalEnvelope` 两函数
 - 收件人信息 X/Y 从固定像素改为比例定位（`w*0.30`, `h*0.30`）
 - 打印 Canvas 改为独立 `printCanvasRef`，由 `useEffect` 以 `forPrint=true` 绘制，不再复制预览 Canvas
+*（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*
