@@ -13,7 +13,8 @@ export function drawEnvelope(
   sender: SenderInfo,
   recipient: Address,
   settings: EnvelopeSettings,
-  forPrint = false
+  forPrint = false,
+  dpr = 1
 ): void {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
@@ -22,8 +23,12 @@ export function drawEnvelope(
   const w = Math.round(sizeConfig.width * MM_TO_PX);
   const h = Math.round(sizeConfig.height * MM_TO_PX);
 
-  canvas.width = w;
-  canvas.height = h;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+
+  if (dpr !== 1) {
+    ctx.scale(dpr, dpr);
+  }
 
   if (isDomestic(settings)) {
     drawDomesticEnvelope(ctx, sender, recipient, settings, w, h, forPrint);

@@ -50,10 +50,10 @@ export default function EnvelopeEditor() {
     drawEnvelope(canvasRef.current, sender, recipient, currentEnvelope);
   }, [sender, recipient, currentEnvelope]);
 
-  // Draw print canvas without red boxes
+  // Draw print canvas without red boxes, at 3× DPR for sharp printing
   useEffect(() => {
     if (!printCanvasRef.current) return;
-    drawEnvelope(printCanvasRef.current, sender, recipient, currentEnvelope, true);
+    drawEnvelope(printCanvasRef.current, sender, recipient, currentEnvelope, true, 3);
   }, [sender, recipient, currentEnvelope]);
 
   // AMap autocomplete with debounce
