@@ -1,10 +1,8 @@
-import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { useStore } from '../store';
-import { drawEnvelope, canvasToBlob } from '../utils/envelopeCanvas';
+import { drawEnvelope } from '../utils/envelopeCanvas';
 import { ENVELOPE_SIZES } from '../store/types';
 import type { SenderInfo, Address, EnvelopeSettings } from '../store/types';
-import { useReactToPrint } from 'react-to-print';
-import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
 interface AmapTip {
@@ -30,8 +28,6 @@ export default function EnvelopeEditor() {
   } = useStore();
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const printCanvasRef = useRef<HTMLCanvasElement>(null);
-  const printRef = useRef<HTMLDivElement>(null);
   const [sender, setSender] = useState<SenderInfo>(settings.defaultSender);
   const [recipient, setRecipient] = useState<Address>(
     currentRecipient || { id: '', name: '', recipient: '', address: '', phone: '', postcode: '', createdAt: '' }
@@ -48,12 +44,6 @@ export default function EnvelopeEditor() {
   useEffect(() => {
     if (!canvasRef.current) return;
     drawEnvelope(canvasRef.current, sender, recipient, currentEnvelope);
-  }, [sender, recipient, currentEnvelope]);
-
-  // Draw print canvas without red boxes, at 3× DPR for sharp printing
-  useEffect(() => {
-    if (!printCanvasRef.current) return;
-    drawEnvelope(printCanvasRef.current, sender, recipient, currentEnvelope, true, 3);
   }, [sender, recipient, currentEnvelope]);
 
   // AMap autocomplete with debounce
@@ -167,41 +157,53 @@ export default function EnvelopeEditor() {
     }
   };
 
-  const pageStyle = useMemo(() => {
-    const cfg = ENVELOPE_SIZES[currentEnvelope.size];
-    const w = currentEnvelope.size === 'custom' ? (currentEnvelope.customWidth || cfg.width) : cfg.width;
-    const h = currentEnvelope.size === 'custom' ? (currentEnvelope.customHeight || cfg.height) : cfg.height;
-    return `@page { size: ${w}mm ${h}mm; margin: 0; }`;
-  }, [currentEnvelope.size, currentEnvelope.customWidth, currentEnvelope.customHeight]);
+  const handlePrint = useCallback(() => {
+    const mmW = currentEnvelope.size === 'custom'
+      ? (currentEnvelope.customWidth || sizeConfig.width)
+      : sizeConfig.width;
+    const mmH = currentEnvelope.size === 'custom'
+      ? (currentEnvelope.customHeight || sizeConfig.height)
+      : sizeConfig.height;
 
-  const handlePrint = useReactToPrint({
-    contentRef: printRef,
-    documentTitle: `信封_${recipient.recipient || '打印'}`,
-    pageStyle,
-    onBeforePrint: () => {
-      return new Promise<void>((resolve) => {
-        // cloneNode 不复制 canvas 像素缓冲区，先转为 <img> 再打印
-        if (printCanvasRef.current && printRef.current) {
-          const img = document.createElement('img');
-          img.src = printCanvasRef.current.toDataURL('image/png', 1.0);
-          img.style.width = '100%';
-          img.style.display = 'block';
-          printRef.current.innerHTML = '';
-          printRef.current.appendChild(img);
-        }
-        resolve();
-      });
-    },
-    onAfterPrint: () => {
-      // 恢复 canvas 到 DOM（像素缓冲区仍保留）
-      if (printRef.current && printCanvasRef.current) {
-        printRef.current.innerHTML = '';
-        printRef.current.appendChild(printCanvasRef.current);
-      }
-      addPrintRecord({ recipient, sender, settings: currentEnvelope, type: 'print' });
-      setMsg({ text: '打印完成，已记录到历史', type: 'ok' });
-    },
-  });
+    // 用 3× DPR 临时 Canvas 绘制高清信封
+    const printCanvas = document.createElement('canvas');
+    drawEnvelope(printCanvas, sender, recipient, currentEnvelope, true, 3);
+    const imgData = printCanvas.toDataURL('image/png', 1.0);
+
+    // 打开干净打印窗口，避免 react-to-print iframe 的 CSS 继承问题
+    const pw = window.open('', '_blank');
+    if (!pw) {
+      setMsg({ text: '请允许弹出窗口以打印信封', type: 'err' });
+      return;
+    }
+    pw.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>信封_${recipient.recipient || '打印'}</title>
+        <style>
+          @page { size: ${mmW}mm ${mmH}mm; margin: 0; }
+          * { margin: 0; padding: 0; }
+          html, body { width: 100%; height: 100%; }
+          img { width: 100%; display: block; }
+        </style>
+      </head>
+      <body>
+        <img id="print-img" src="${imgData}" alt="信封" />
+        <script>
+          document.getElementById('print-img').onload = function() {
+            setTimeout(function() { window.print(); }, 200);
+          };
+        </script>
+      </body>
+      </html>
+    `);
+    pw.document.close();
+
+    addPrintRecord({ recipient, sender, settings: currentEnvelope, type: 'print' });
+    setMsg({ text: '打印任务已发起，完成打印后可关闭预览窗口', type: 'ok' });
+  }, [sender, recipient, currentEnvelope, sizeConfig, addPrintRecord]);
 
   const handleExportPDF = async () => {
     if (!canvasRef.current) return;
@@ -541,11 +543,6 @@ export default function EnvelopeEditor() {
               </div>
             </div>
           )}
-        </div>
-
-        {/* Hidden print area */}
-        <div ref={printRef} className="print-area">
-          <canvas ref={printCanvasRef} id="print-canvas" />
         </div>
       </div>
     </div>

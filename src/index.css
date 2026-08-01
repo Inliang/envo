@@ -76,24 +76,3 @@
     background-position: right 12px center;
   }
 }
-
-/* 打印区默认隐藏，仅在打印时显示 */
-.print-area {
-  display: none;
-}
-
-@media print {
-  body * {
-    visibility: hidden;
-  }
-  .print-area, .print-area * {
-    visibility: visible;
-  }
-  .print-area {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    display: block !important;
-  }
-}
