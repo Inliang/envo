@@ -57,27 +57,38 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="text-center py-5 text-xs text-brand-300 border-t border-brand-50">
-        <span className="block mb-3 text-[11px]">Envo v1.0.0 · 数据仅存储在本地浏览器</span>
-        <span className="inline-flex items-center gap-3">
+      <footer className="text-center py-6 border-t border-brand-100/60 bg-gradient-to-t from-brand-50/30">
+        <span className="block mb-4 text-[11px] tracking-wide text-brand-300">Envo v1.0.0 · 数据仅存储在本地浏览器</span>
+        <span className="inline-flex items-center gap-2 flex-wrap justify-center">
           <a
             href="https://github.com/Inliang/envo"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-50/60 text-brand-500 hover:bg-brand-100 hover:text-brand-700 transition-all duration-200 text-[11px] leading-none"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/70 text-brand-500 hover:bg-white hover:text-brand-700 hover:shadow-sm transition-all duration-200 text-[11px] leading-none border border-brand-100/60"
+            title="Envo 项目仓库"
           >
             <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="currentColor"><path fillRule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-            github.com/Inliang/envo
+            Envo
           </a>
-          <span className="text-brand-200 select-none">/</span>
           <a
             href="https://inliang.github.io/fmo-secondary/"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-50/60 text-brand-500 hover:bg-brand-100 hover:text-brand-700 transition-all duration-200 text-[11px] leading-none"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/70 text-brand-500 hover:bg-white hover:text-brand-700 hover:shadow-sm transition-all duration-200 text-[11px] leading-none border border-brand-100/60"
+            title="FMO Secondary 项目"
           >
             <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M2 8h12" strokeLinecap="round"/><path d="M8 1.5A10.5 10.5 0 0111.5 8 10.5 10.5 0 018 14.5 10.5 10.5 0 014.5 8 10.5 10.5 0 018 1.5z" strokeLinecap="round"/></svg>
-            fmo-secondary
+            FMO
+          </a>
+          <a
+            href="https://qsl.jdbot.top/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/70 text-brand-500 hover:bg-white hover:text-brand-700 hover:shadow-sm transition-all duration-200 text-[11px] leading-none border border-brand-100/60"
+            title="QSL 卡片管理"
+          >
+            <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="14" height="10" rx="1.5"/><path d="M1 5.5l6.2 4.4a1 1 0 001.1 0L14 5.5"/></svg>
+            QSL
           </a>
         </span>
       </footer>
