@@ -1,4 +1,4 @@
-import type { EnvelopeSettings, SenderInfo, Address } from '../store/types';
+﻿import type { EnvelopeSettings, SenderInfo, Address } from '../store/types';
 import { ENVELOPE_SIZES } from '../store/types';
 
 const MM_TO_PX = 3.78;
@@ -62,8 +62,8 @@ function drawDomesticEnvelope(
     postcode: ptPx(18),       // 邮编格内数字
     address: ptPx(11),        // 收件人地址
     name: ptPx(24),           // 收件人姓名（醒目）
-    phone: ptPx(14),          // 收件人电话
-    sender: ptPx(10),         // 寄件人信息
+    phone: ptPx(16),          // 收件人电话
+    sender: ptPx(12),         // 寄件人信息
     senderPostcode: ptPx(12), // 寄件人邮编
     stamp: ptPx(8),           // 贴邮票处标注
   };
@@ -174,7 +174,7 @@ function drawDomesticEnvelope(
   if (recipient.phone && displayName) {
     const nameWidth = ctx.measureText(fullName).width;
     ctx.font = `${F.phone}px ${settings.fontFamily}`;
-    ctx.fillStyle = '#6B7280';
+    ctx.fillStyle = forPrint ? '#000000' : '#6B7280';
     ctx.fillText(recipient.phone, recipX + nameWidth + Math.round(w * 0.06), nameY);
   }
 
@@ -196,7 +196,7 @@ function drawDomesticEnvelope(
     ctx.textAlign = 'right';
     ctx.textBaseline = 'top';
     ctx.font = `${F.sender}px ${settings.fontFamily}`;
-    ctx.fillStyle = '#6B7280';
+    ctx.fillStyle = forPrint ? '#000000' : '#6B7280';
 
     const senderLines: string[] = [];
     if (sender.address) senderLines.push(sender.address);
@@ -276,7 +276,7 @@ function drawInternationalEnvelope(
   if (settings.showReturnAddress && sender.name) {
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    ctx.fillStyle = '#6B7280';
+    ctx.fillStyle = forPrint ? '#000000' : '#6B7280';
     ctx.font = `${fs * 0.7}px ${settings.fontFamily}`;
     const senderLines = [
       `From: ${sender.name}`,
@@ -309,7 +309,7 @@ function drawInternationalEnvelope(
 
   if (recipient.phone) {
     ctx.font = `${fs * 0.8}px ${settings.fontFamily}`;
-    ctx.fillStyle = '#6B7280';
+    ctx.fillStyle = forPrint ? '#000000' : '#6B7280';
     ctx.fillText(
       `Tel: ${recipient.phone}`,
       recipX,

@@ -230,7 +230,7 @@ export default function AddressBook() {
     for (const addr of selected) {
       const canvas = document.createElement('canvas');
       canvas.className = 'envo-batch-canvas';
-      drawEnvelope(canvas, sender, addr, envSettings, true, 3);
+      drawEnvelope(canvas, sender, addr, envSettings, true, 6);
       container.appendChild(canvas);
     }
 

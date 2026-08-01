@@ -167,7 +167,7 @@ export default function EnvelopeEditor() {
 
     // 用 3× DPR 临时 Canvas 绘制高清信封
     const printCanvas = document.createElement('canvas');
-    drawEnvelope(printCanvas, sender, recipient, currentEnvelope, true, 3);
+    drawEnvelope(printCanvas, sender, recipient, currentEnvelope, true, 6);
     const imgData = printCanvas.toDataURL('image/png', 1.0);
 
     // 打开干净打印窗口，避免 react-to-print iframe 的 CSS 继承问题
@@ -211,7 +211,7 @@ export default function EnvelopeEditor() {
     try {
       // 用 3× DPR 创建临时 Canvas，确保 PDF 导出清晰
       const tempCanvas = document.createElement('canvas');
-      drawEnvelope(tempCanvas, sender, recipient, currentEnvelope, true, 3);
+      drawEnvelope(tempCanvas, sender, recipient, currentEnvelope, true, 6);
       const imgData = tempCanvas.toDataURL('image/png', 1.0);
       const mmW = sizeConfig.width;
       const mmH = sizeConfig.height;
