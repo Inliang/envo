@@ -207,8 +207,10 @@ export default function EnvelopeEditor() {
     if (!canvasRef.current) return;
     setPrintMode('pdf');
     try {
-      const canvas = canvasRef.current;
-      const imgData = canvas.toDataURL('image/png', 1.0);
+      // 用 3× DPR 创建临时 Canvas，确保 PDF 导出清晰
+      const tempCanvas = document.createElement('canvas');
+      drawEnvelope(tempCanvas, sender, recipient, currentEnvelope, true, 3);
+      const imgData = tempCanvas.toDataURL('image/png', 1.0);
       const mmW = sizeConfig.width;
       const mmH = sizeConfig.height;
       const pdf = new jsPDF({ orientation: mmW > mmH ? 'l' : 'p', unit: 'mm', format: [mmW, mmH] });
