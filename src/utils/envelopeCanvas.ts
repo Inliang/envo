@@ -90,7 +90,7 @@ function drawDomesticEnvelope(
 
   // Sender info area (bottom-right, above postal code)
   const senderX = Math.round(w * 0.90);     // right-aligned near right edge
-  const senderBaseY = Math.round(h * 0.72); // bottom area, above postal code
+  const senderBaseY = Math.round(h * 0.64); // bottom area, above postal code
 
   // Sender postcode grid (bottom-right, moved left from docx)
   const sZipCellW = Math.round(w * 0.03);   // ~6.6mm each
