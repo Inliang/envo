@@ -264,21 +264,24 @@ export default function EnvelopeEditor() {
           </h2>
           <div className="space-y-3">
             <div>
-              <label htmlFor="sender-name" className="input-label">寄件人姓名</label>
+              {/* 视觉 label 去前缀（卡片标题已给出语境），读屏信息由 aria-label 补回 */}
+              <label htmlFor="sender-name" className="input-label">姓名</label>
               <input
                 id="sender-name"
                 className="input-field"
-                placeholder="寄件人姓名"
+                aria-label="寄件人姓名"
+                placeholder="李四"
                 value={sender.name}
                 onChange={(e) => setSender({ ...sender, name: e.target.value })}
               />
             </div>
             <div>
-              <label htmlFor="sender-address" className="input-label">寄件人地址</label>
+              <label htmlFor="sender-address" className="input-label">地址</label>
               <textarea
                 id="sender-address"
                 className="input-field resize-none"
-                placeholder="寄件人地址"
+                aria-label="寄件人地址"
+                placeholder="北京市朝阳区xx路 1 号"
                 rows={2}
                 value={sender.address}
                 onChange={(e) => setSender({ ...sender, address: e.target.value })}
@@ -286,20 +289,22 @@ export default function EnvelopeEditor() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="sender-phone" className="input-label">寄件人电话</label>
+                <label htmlFor="sender-phone" className="input-label">电话</label>
                 <input
                   id="sender-phone"
                   className="input-field"
+                  aria-label="寄件人电话"
                   placeholder="联系电话"
                   value={sender.phone || ''}
                   onChange={(e) => setSender({ ...sender, phone: e.target.value })}
                 />
               </div>
               <div>
-                <label htmlFor="sender-postcode" className="input-label">寄件人邮编</label>
+                <label htmlFor="sender-postcode" className="input-label">邮编</label>
                 <input
                   id="sender-postcode"
                   className="input-field"
+                  aria-label="寄件人邮编"
                   placeholder="邮政编码"
                   value={sender.postcode || ''}
                   onChange={(e) => setSender({ ...sender, postcode: e.target.value })}
@@ -326,20 +331,22 @@ export default function EnvelopeEditor() {
           </div>
           <div className="space-y-3">
             <div>
-              <label htmlFor="rcpt-name" className="input-label">收件人姓名</label>
+              <label htmlFor="rcpt-name" className="input-label">姓名</label>
               <input
                 id="rcpt-name"
                 className="input-field"
-                placeholder="收件人姓名"
+                aria-label="收件人姓名"
+                placeholder="张三"
                 value={recipient.name}
                 onChange={(e) => setRecipient({ ...recipient, name: e.target.value })}
               />
             </div>
             <div>
-              <label htmlFor="rcpt-org" className="input-label">收件人 / 单位 <span className="text-red-700" aria-hidden="true">*</span></label>
+              <label htmlFor="rcpt-org" className="input-label">单位 / 公司 <span className="text-red-700" aria-hidden="true">*</span></label>
               <input
                 id="rcpt-org"
                 className="input-field"
+                aria-label="收件人单位"
                 placeholder="单位或公司名称"
                 aria-required="true"
                 value={recipient.recipient}
@@ -347,10 +354,11 @@ export default function EnvelopeEditor() {
               />
             </div>
             <div className="relative">
-              <label htmlFor="rcpt-address" className="input-label">收件人地址 <span className="text-red-700" aria-hidden="true">*</span></label>
+              <label htmlFor="rcpt-address" className="input-label">地址 <span className="text-red-700" aria-hidden="true">*</span></label>
               <textarea
                 id="rcpt-address"
                 className="input-field resize-none pr-8"
+                aria-label="收件人地址"
                 placeholder="输入地址关键词，自动联想候选地址"
                 rows={3}
                 aria-required="true"
@@ -395,20 +403,22 @@ export default function EnvelopeEditor() {
             )}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="rcpt-phone" className="input-label">收件人电话</label>
+                <label htmlFor="rcpt-phone" className="input-label">电话</label>
                 <input
                   id="rcpt-phone"
                   className="input-field"
+                  aria-label="收件人电话"
                   placeholder="联系电话"
                   value={recipient.phone || ''}
                   onChange={(e) => setRecipient({ ...recipient, phone: e.target.value })}
                 />
               </div>
               <div>
-                <label htmlFor="rcpt-postcode" className="input-label">收件人邮编</label>
+                <label htmlFor="rcpt-postcode" className="input-label">邮编</label>
                 <input
                   id="rcpt-postcode"
                   className="input-field"
+                  aria-label="收件人邮编"
                   placeholder="6 位数字，建议手填"
                   value={recipient.postcode || ''}
                   onChange={(e) => setRecipient({ ...recipient, postcode: e.target.value })}
