@@ -52,7 +52,7 @@ envo/
 │   │   └── ConfirmDialog.tsx    # 内联二次确认框（删除操作共用）
 │   ├── store/
 │   │   ├── types.ts             # 类型定义
-│   │   └── index.ts             # Zustand store（含 v1→v2 数据迁移）
+│   │   └── index.ts             # Zustand store（含 v1→v2→v3 数据迁移，幂等）
 │   ├── utils/
 │   │   ├── encryption.ts        # AES 加解密
 │   │   ├── envelopeCanvas.ts    # Canvas 信封渲染
