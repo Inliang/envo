@@ -32,7 +32,7 @@ export default function EnvelopeEditor() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [sender, setSender] = useState<SenderInfo>(settings.defaultSender);
   const [recipient, setRecipient] = useState<Address>(
-    currentRecipient || { id: '', name: '', recipient: '', address: '', phone: '', postcode: '', createdAt: '' }
+    currentRecipient || { id: '', name: '', address: '', phone: '', postcode: '', createdAt: '' }
   );
   const [amapSuggestions, setAmapSuggestions] = useState<AmapTip[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -166,13 +166,13 @@ export default function EnvelopeEditor() {
         setMsg({ text: '请允许弹出窗口以打印信封', type: 'err' });
         return;
       }
-      const altText = `信封打印预览：${recipient.recipient || recipient.name || '未命名'}，${sizeConfig.label}`;
+      const altText = `信封打印预览：${recipient.name || '未命名'}，${sizeConfig.label}`;
       pw.document.write(`
         <!DOCTYPE html>
         <html>
         <head>
           <meta charset="UTF-8">
-          <title>信封_${recipient.recipient || '打印'}</title>
+          <title>信封_${recipient.name || '打印'}</title>
           <style>
             @page { size: ${mmW}mm ${mmH}mm; margin: 0; }
             * { margin: 0; padding: 0; }
@@ -213,7 +213,7 @@ export default function EnvelopeEditor() {
       const mmH = sizeConfig.height;
       const pdf = new jsPDF({ orientation: mmW > mmH ? 'l' : 'p', unit: 'mm', format: [mmW, mmH] });
       pdf.addImage(imgData, 'PNG', 0, 0, mmW, mmH);
-      pdf.save(`信封_${recipient.recipient || '导出'}.pdf`);
+      pdf.save(`信封_${recipient.name || '导出'}.pdf`);
       addPrintRecord({ recipient, sender, settings: currentEnvelope, type: 'pdf' });
       setMsg({ text: 'PDF 导出完成，已记录到历史', type: 'ok' });
     } catch {
@@ -223,19 +223,18 @@ export default function EnvelopeEditor() {
   };
 
   const clearForm = () => {
-    setRecipient({ id: '', name: '', recipient: '', address: '', phone: '', postcode: '', createdAt: '' });
+    setRecipient({ id: '', name: '', address: '', phone: '', postcode: '', createdAt: '' });
     setAmapSuggestions([]);
     setShowSuggestions(false);
   };
 
   const saveAsAddress = () => {
-    if (!recipient.recipient || !recipient.address) {
-      setMsg({ text: '请填写收件人（或单位）和地址，再存入地址簿', type: 'err' });
+    if (!recipient.name || !recipient.address) {
+      setMsg({ text: '请填写收件人和地址，再存入地址簿', type: 'err' });
       return;
     }
     useStore.getState().addAddress({
-      name: recipient.name || recipient.recipient,
-      recipient: recipient.recipient,
+      name: recipient.name,
       address: recipient.address,
       phone: recipient.phone,
       // B6-B：邮编一律由用户手填，这里必须一并把「手填的那个邮编」存进地址簿，
@@ -330,27 +329,17 @@ export default function EnvelopeEditor() {
             </button>
           </div>
           <div className="space-y-3">
+            {/* B10：姓名 / 单位合并为单一「收件人」——信封主行只有一个位置，两个框必然互相覆盖 */}
             <div>
-              <label htmlFor="rcpt-name" className="input-label">姓名</label>
+              <label htmlFor="rcpt-name" className="input-label">收件人 <span className="text-red-700" aria-hidden="true">*</span></label>
               <input
                 id="rcpt-name"
                 className="input-field"
-                aria-label="收件人姓名"
-                placeholder="张三"
+                aria-label="收件人"
+                placeholder="张三 / XX公司"
+                aria-required="true"
                 value={recipient.name}
                 onChange={(e) => setRecipient({ ...recipient, name: e.target.value })}
-              />
-            </div>
-            <div>
-              <label htmlFor="rcpt-org" className="input-label">单位 / 公司 <span className="text-red-700" aria-hidden="true">*</span></label>
-              <input
-                id="rcpt-org"
-                className="input-field"
-                aria-label="收件人单位"
-                placeholder="单位或公司名称"
-                aria-required="true"
-                value={recipient.recipient}
-                onChange={(e) => setRecipient({ ...recipient, recipient: e.target.value })}
               />
             </div>
             <div className="relative">
@@ -594,7 +583,7 @@ export default function EnvelopeEditor() {
             <canvas
               ref={canvasRef}
               role="img"
-              aria-label={`信封排版预览，${sizeConfig.label}，收件人 ${recipient.recipient || recipient.name || '未填写'}，地址 ${recipient.address || '未填写'}`}
+              aria-label={`信封排版预览，${sizeConfig.label}，收件人 ${recipient.name || '未填写'}，地址 ${recipient.address || '未填写'}`}
               className="block max-w-full w-auto h-auto max-h-[45vh] sm:max-h-[540px] shadow-md rounded-md"
             />
             <p className="sr-only">
@@ -617,7 +606,7 @@ export default function EnvelopeEditor() {
                         : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
                     }`}
                   >
-                    {addr.name || addr.recipient || '(未命名)'}
+                    {addr.name || '(未命名)'}
                   </button>
                 ))}
                 {addresses.length > 6 && (

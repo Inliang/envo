@@ -97,7 +97,7 @@ export default function PrintHistory() {
             <div key={record.id} className="card-bento flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium text-brand-800">{record.recipient.recipient}</span>
+                  <span className="font-medium text-brand-800">{record.recipient.name}</span>
                   <span className={`tag text-xs ${
                     record.type === 'print'
                       ? 'bg-brand-100 text-brand-800'
@@ -118,7 +118,7 @@ export default function PrintHistory() {
                 <button
                   onClick={() => setPendingDeleteId(record.id)}
                   className="btn-text-danger"
-                  aria-label={`删除「${record.recipient.recipient}」的这条打印记录`}
+                  aria-label={`删除「${record.recipient.name}」的这条打印记录`}
                 >
                   删除
                 </button>
@@ -134,7 +134,7 @@ export default function PrintHistory() {
         title="确定删除这条打印记录？"
         description={
           <>
-            收件人「{pendingRecord?.recipient.recipient || ''} · {pendingRecord?.recipient.address || ''}」，
+            收件人「{pendingRecord?.recipient.name || ''} · {pendingRecord?.recipient.address || ''}」，
             {pendingRecord ? new Date(pendingRecord.printedAt).toLocaleString('zh-CN') : ''}
             {pendingRecord?.type === 'pdf' ? ' 导出 PDF' : ' 打印'}。
             <br />

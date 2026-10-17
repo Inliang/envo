@@ -30,7 +30,6 @@ export default function AddressBook() {
 
   // New address form state
   const [newName, setNewName] = useState('');
-  const [newRecipient, setNewRecipient] = useState('');
   const [newAddr, setNewAddr] = useState('');
   const [newPostcode, setNewPostcode] = useState('');
   const [newPhone, setNewPhone] = useState('');
@@ -39,7 +38,6 @@ export default function AddressBook() {
   // Edit state
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
-  const [editRecipient, setEditRecipient] = useState('');
   const [editAddr, setEditAddr] = useState('');
   const [editPostcode, setEditPostcode] = useState('');
   const [editPhone, setEditPhone] = useState('');
@@ -59,7 +57,6 @@ export default function AddressBook() {
     const s = search.toLowerCase();
     return (
       a.name.toLowerCase().includes(s) ||
-      a.recipient.toLowerCase().includes(s) ||
       a.address.toLowerCase().includes(s)
     );
   });
@@ -77,14 +74,12 @@ export default function AddressBook() {
     if (!newName || !newAddr) return;
     addAddress({
       name: newName,
-      recipient: newRecipient || newName,
       address: newAddr,
       postcode: newPostcode,
       phone: newPhone,
       tag: (newTag as Address['tag']) || undefined,
     });
     setNewName('');
-    setNewRecipient('');
     setNewAddr('');
     setNewPostcode('');
     setNewPhone('');
@@ -101,7 +96,6 @@ export default function AddressBook() {
   const startEdit = (addr: Address) => {
     setEditingId(addr.id);
     setEditName(addr.name);
-    setEditRecipient(addr.recipient);
     setEditAddr(addr.address);
     setEditPostcode(addr.postcode || '');
     setEditPhone(addr.phone || '');
@@ -112,7 +106,6 @@ export default function AddressBook() {
     if (!editingId || !editName || !editAddr) return;
     updateAddress(editingId, {
       name: editName,
-      recipient: editRecipient || editName,
       address: editAddr,
       postcode: editPostcode || undefined,
       phone: editPhone || undefined,
@@ -124,7 +117,6 @@ export default function AddressBook() {
   const cancelEdit = () => {
     setEditingId(null);
     setEditName('');
-    setEditRecipient('');
     setEditAddr('');
     setEditPostcode('');
     setEditPhone('');
@@ -176,7 +168,6 @@ export default function AddressBook() {
     if (!importResult || importResult.rows.length === 0) return;
     const addrs = importResult.rows.map((row: ImportRow) => ({
       name: row.name,
-      recipient: row.recipient,
       address: row.address,
       postcode: row.postcode || undefined,
       phone: row.phone || undefined,
@@ -313,13 +304,12 @@ export default function AddressBook() {
           )}
 
           {importResult.rows.length === 0 ? (
-            <p className="text-sm text-slate-600">没有识别到可导入的地址，请检查文件里是否有「姓名」和「地址」两列</p>
+            <p className="text-sm text-slate-600">没有识别到可导入的地址，请检查文件里是否有「收件人」（或「姓名」）和「地址」两列</p>
           ) : (
             <div className="-mx-4 px-4 sm:mx-0 sm:px-0 max-h-64 overflow-y-auto border border-brand-100 rounded-lg">
               <table className="w-full min-w-[640px] text-xs">
                 <thead className="bg-brand-50 sticky top-0">
                   <tr>
-                    <th scope="col" className="p-2 text-left text-brand-800 font-semibold whitespace-nowrap">姓名</th>
                     <th scope="col" className="p-2 text-left text-brand-800 font-semibold whitespace-nowrap">收件人</th>
                     <th scope="col" className="p-2 text-left text-brand-800 font-semibold whitespace-nowrap">地址</th>
                     <th scope="col" className="p-2 text-left text-brand-800 font-semibold whitespace-nowrap">邮编</th>
@@ -331,7 +321,6 @@ export default function AddressBook() {
                   {importResult.rows.slice(0, 50).map((row, i) => (
                     <tr key={i} className="border-t border-brand-50 hover:bg-brand-50/50">
                       <td className="p-2">{row.name}</td>
-                      <td className="p-2 text-slate-600">{row.recipient}</td>
                       <td className="p-2 max-w-[200px] truncate" title={row.address}>
                         {row.address}
                       </td>
@@ -342,7 +331,7 @@ export default function AddressBook() {
                   ))}
                   {importResult.rows.length > 50 && (
                     <tr>
-                      <td colSpan={6} className="p-2 text-center text-slate-500">
+                      <td colSpan={5} className="p-2 text-center text-slate-500">
                         … 还有 {importResult.rows.length - 50} 条记录
                       </td>
                     </tr>
@@ -370,28 +359,17 @@ export default function AddressBook() {
       {/* Add Form */}
       {showAdd && (
         <div className="card-bento p-5 space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label htmlFor="addr-new-name" className="input-label">姓名 <span className="text-red-700" aria-hidden="true">*</span></label>
-              <input
-                id="addr-new-name"
-                className="input-field"
-                placeholder="姓名"
-                aria-required="true"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-              />
-            </div>
-            <div>
-              <label htmlFor="addr-new-org" className="input-label">单位 / 公司</label>
-              <input
-                id="addr-new-org"
-                className="input-field"
-                placeholder="单位或公司名称"
-                value={newRecipient}
-                onChange={(e) => setNewRecipient(e.target.value)}
-              />
-            </div>
+          {/* B10：姓名 / 单位合并为单一「收件人」，与信封编辑页保持一致 */}
+          <div>
+            <label htmlFor="addr-new-name" className="input-label">收件人 <span className="text-red-700" aria-hidden="true">*</span></label>
+            <input
+              id="addr-new-name"
+              className="input-field"
+              placeholder="张三 / XX公司"
+              aria-required="true"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+            />
           </div>
           <div>
             <label htmlFor="addr-new-addr" className="input-label">地址 <span className="text-red-700" aria-hidden="true">*</span></label>
@@ -456,11 +434,11 @@ export default function AddressBook() {
       {/* Search & Filter */}
       <div className="flex flex-wrap gap-3 items-center">
         <div className="w-full sm:w-auto sm:max-w-xs">
-          <label htmlFor="addr-search" className="sr-only">搜索姓名、单位或地址</label>
+          <label htmlFor="addr-search" className="sr-only">搜索收件人或地址</label>
           <input
             id="addr-search"
             className="input-field"
-            placeholder="搜索姓名、单位或地址…"
+            placeholder="搜索收件人或地址…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -527,28 +505,17 @@ export default function AddressBook() {
                 /* --- Edit Form --- */
                 <div className="space-y-3">
                   <h4 className="text-sm font-semibold text-brand-800">编辑地址</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label htmlFor={`addr-edit-name-${addr.id}`} className="input-label">姓名 <span className="text-red-700" aria-hidden="true">*</span></label>
-                      <input
-                        id={`addr-edit-name-${addr.id}`}
-                        className="input-field"
-                        placeholder="姓名"
-                        aria-required="true"
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor={`addr-edit-org-${addr.id}`} className="input-label">单位 / 公司</label>
-                      <input
-                        id={`addr-edit-org-${addr.id}`}
-                        className="input-field"
-                        placeholder="单位或公司名称"
-                        value={editRecipient}
-                        onChange={(e) => setEditRecipient(e.target.value)}
-                      />
-                    </div>
+                  {/* B10：编辑态同样只有单一「收件人」字段 */}
+                  <div>
+                    <label htmlFor={`addr-edit-name-${addr.id}`} className="input-label">收件人 <span className="text-red-700" aria-hidden="true">*</span></label>
+                    <input
+                      id={`addr-edit-name-${addr.id}`}
+                      className="input-field"
+                      placeholder="张三 / XX公司"
+                      aria-required="true"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                    />
                   </div>
                   <div>
                     <label htmlFor={`addr-edit-addr-${addr.id}`} className="input-label">地址 <span className="text-red-700" aria-hidden="true">*</span></label>
@@ -624,9 +591,6 @@ export default function AddressBook() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center flex-wrap gap-2">
                         <span className="font-semibold text-brand-800">{addr.name}</span>
-                        {addr.recipient !== addr.name && (
-                          <span className="text-sm text-slate-600">{addr.recipient}</span>
-                        )}
                         {addr.tag && (
                           <span
                             className={`tag text-xs ${TAG_COLORS[addr.tag] || TAG_COLORS.other}`}
@@ -680,10 +644,7 @@ export default function AddressBook() {
         title={`确定删除「${pendingDelete?.name || ''}」这个地址？`}
         description={
           <>
-            {pendingDelete?.recipient && pendingDelete.recipient !== pendingDelete.name && (
-              <>收件人「{pendingDelete.recipient}」，</>
-            )}
-            {pendingDelete?.address}
+            收件人「{pendingDelete?.name || ''}」，{pendingDelete?.address}
             <br />
             <span className="text-red-700 font-medium">删除后无法恢复。</span>
           </>

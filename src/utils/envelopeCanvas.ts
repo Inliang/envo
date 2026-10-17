@@ -177,7 +177,8 @@ function drawDomesticEnvelope(
   /* ═══════════════════════════════════════
    *  收件人姓名 + 电话（同行，docx 风格）
    * ═══════════════════════════════════════ */
-  const displayName = recipient.recipient || recipient.name || '';
+  // B10：收件人已合并为单一字段 name（姓名或单位都填这里），不再有 name / recipient 二选一
+  const displayName = recipient.name || '';
   const fullName = displayName + (displayName ? '（收）' : '');
 
   ctx.fillStyle = '#134E4A';
@@ -314,7 +315,7 @@ function drawInternationalEnvelope(
   ctx.fillStyle = '#134E4A';
   setFont(ctx, 600, fs);
   ctx.fillText('To:', recipX, recipY - 20);
-  ctx.fillText(recipient.recipient || recipient.name, recipX, recipY);
+  ctx.fillText(recipient.name || '', recipX, recipY);
 
   const addrLines = recipient.address.split('\n').filter(Boolean);
   setFont(ctx, '', fs);

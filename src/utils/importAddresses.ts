@@ -2,8 +2,8 @@ import * as XLSX from 'xlsx';
 import type { Address } from '../store/types';
 
 export interface ImportRow {
+  /** 收件人（B10 起单一字段：姓名或单位都归一到这里） */
   name: string;
-  recipient: string;
   address: string;
   postcode: string;
   phone: string;
@@ -46,14 +46,21 @@ function mapHeaders(headers: string[]): Record<string, number> {
   const mapping: Record<string, number> = {};
   for (let i = 0; i < headers.length; i++) {
     const norm = normalizeKey(headers[i]);
+    if (!norm) continue;
+    let matched = false;
     for (const [field, aliases] of Object.entries(COLUMN_ALIASES)) {
+      // 该字段已被前面的列占定，就不再重复占位 —— 注意这里是「跳过」而不是「结束整轮」：
+      // 原实现在这里直接 break 掉整个字段循环，导致只要「姓名 / 收件人」先出现，
+      // 后面的「地址」列永远匹配不上（导出再导入必然失败）。
+      if (mapping[field] !== undefined) continue;
       for (const alias of aliases) {
         if (norm === normalizeKey(alias)) {
           mapping[field] = i;
+          matched = true;
           break;
         }
       }
-      if (mapping[field] !== undefined) break;
+      if (matched) break;
     }
   }
   return mapping;
@@ -63,8 +70,11 @@ function rowToImportRow(
   row: string[],
   mapping: Record<string, number>
 ): ImportRow | null {
-  const name = mapping.name !== undefined ? (row[mapping.name] || '').trim() : '';
-  let recipient = mapping.recipient !== undefined ? (row[mapping.recipient] || '').trim() : '';
+  const nameCol = mapping.name !== undefined ? (row[mapping.name] || '').trim() : '';
+  // 旧版导出的表里有「收件人 / 单位 / 公司」列，B10 合并后一律按「单位列 || 姓名列」归一为 name，
+  // 与原打印主行「单位优先」的取值一致；缺该列时不报错，直接用姓名列。
+  const unitCol = mapping.recipient !== undefined ? (row[mapping.recipient] || '').trim() : '';
+  const name = unitCol || nameCol;
   const address = mapping.address !== undefined ? (row[mapping.address] || '').trim() : '';
   const postcode = mapping.postcode !== undefined ? (row[mapping.postcode] || '').trim() : '';
   const phone = mapping.phone !== undefined ? (row[mapping.phone] || '').trim() : '';
@@ -73,15 +83,12 @@ function rowToImportRow(
 
   if (!name || !address) return null;
 
-  if (!recipient) recipient = name;
-
   const tag: Address['tag'] | undefined = TAG_MAP[tagRaw] || undefined;
 
   const label = tagLabel || tagRaw;
 
   return {
     name,
-    recipient,
     address,
     postcode,
     phone,
@@ -136,8 +143,9 @@ export function parseCSV(text: string): ImportResult {
   const headers = parseLine(headerLine);
   const mapping = mapHeaders(headers);
 
-  if (mapping.name === undefined || mapping.address === undefined) {
-    errors.push('未找到必要的列（姓名、地址）。请确保 CSV 文件包含"姓名"或"name"列以及"地址"或"address"列。');
+  // 只认「收件人 / 单位」列也算通过（B10 合并后姓名列不再是硬门槛）
+  if ((mapping.name === undefined && mapping.recipient === undefined) || mapping.address === undefined) {
+    errors.push('未找到必需的列（收件人、地址）。请确保 CSV 文件包含"收件人"、"姓名"或"name"列，以及"地址"或"address"列。');
     return { rows, errors, total: 0 };
   }
 
@@ -148,7 +156,7 @@ export function parseCSV(text: string): ImportResult {
       if (row) {
         rows.push(row);
       } else {
-        errors.push(`第 ${i + 1} 行：缺少姓名或地址，已跳过`);
+        errors.push(`第 ${i + 1} 行：缺少收件人或地址，已跳过`);
       }
     } catch {
       errors.push(`第 ${i + 1} 行：解析失败，已跳过`);
@@ -178,8 +186,9 @@ export function parseXLSX(buffer: ArrayBuffer): ImportResult {
   const headers = data[0].map((h) => String(h ?? ''));
   const mapping = mapHeaders(headers);
 
-  if (mapping.name === undefined || mapping.address === undefined) {
-    errors.push('未找到必要的列（姓名、地址）。请确保表格包含"姓名"或"name"列以及"地址"或"address"列。');
+  // 只认「收件人 / 单位」列也算通过（B10 合并后姓名列不再是硬门槛）
+  if ((mapping.name === undefined && mapping.recipient === undefined) || mapping.address === undefined) {
+    errors.push('未找到必需的列（收件人、地址）。请确保表格包含"收件人"、"姓名"或"name"列，以及"地址"或"address"列。');
     return { rows, errors, total: 0 };
   }
 
@@ -190,7 +199,7 @@ export function parseXLSX(buffer: ArrayBuffer): ImportResult {
       if (row) {
         rows.push(row);
       } else {
-        errors.push(`第 ${i + 1} 行：缺少姓名或地址，已跳过`);
+        errors.push(`第 ${i + 1} 行：缺少收件人或地址，已跳过`);
       }
     } catch {
       errors.push(`第 ${i + 1} 行：解析失败，已跳过`);
@@ -218,15 +227,16 @@ export function parseJSON(text: string): ImportResult {
 
   for (let i = 0; i < arr.length; i++) {
     const item = arr[i] as Record<string, unknown>;
-    const name = String(item.name ?? item['姓名'] ?? '').trim();
+    const nameCol = String(item.name ?? item['姓名'] ?? '').trim();
     const address = String(item.address ?? item['地址'] ?? '').trim();
+    // 与 CSV/XLSX 同口径：单位列 || 姓名列
+    const name = String(item.recipient ?? item['收件人'] ?? item['单位'] ?? item['公司'] ?? '').trim() || nameCol;
 
     if (!name || !address) {
-      errors.push(`第 ${i + 1} 项：缺少姓名或地址，已跳过`);
+      errors.push(`第 ${i + 1} 项：缺少收件人或地址，已跳过`);
       continue;
     }
 
-    const recipient = String(item.recipient ?? item['收件人'] ?? item['单位'] ?? item['公司'] ?? name).trim();
     const postcode = String(item.postcode ?? item['邮编'] ?? '').trim();
     const phone = String(item.phone ?? item['电话'] ?? '').trim();
     const tagRaw = String(item.tag ?? item['标签'] ?? '').trim();
@@ -236,7 +246,6 @@ export function parseJSON(text: string): ImportResult {
 
     rows.push({
       name,
-      recipient,
       address,
       postcode,
       phone,

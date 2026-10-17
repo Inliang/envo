@@ -3,8 +3,8 @@ import type { Address, PrintRecord } from '../store/types';
 
 export function exportAddressesToExcel(addresses: Address[]): void {
   const data = addresses.map((a) => ({
-    '姓名': a.name,
-    '收件人': a.recipient,
+    // B10：原「姓名」「单位」两列合并为「收件人」一列，与信封编辑页的单一字段对齐
+    '收件人': a.name,
     '地址': a.address,
     '邮编': a.postcode || '',
     '电话': a.phone || '',
@@ -25,7 +25,7 @@ export function exportAddressesToExcel(addresses: Address[]): void {
 
 export function exportHistoryToExcel(records: PrintRecord[]): void {
   const data = records.map((r) => ({
-    '收件人': r.recipient.recipient,
+    '收件人': r.recipient.name,
     '地址': r.recipient.address,
     '电话': r.recipient.phone || '',
     '寄件人': r.sender.name,

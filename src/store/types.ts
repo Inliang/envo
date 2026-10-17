@@ -1,7 +1,10 @@
 export interface Address {
   id: string;
+  /**
+   * 收件人（唯一真源）。姓名或单位都填这里 —— B10 起不再区分 name / recipient 两个字段：
+   * 信封主行只有一个位置，两个框必然互相覆盖（老逻辑「单位优先」直接把姓名丢弃）。
+   */
   name: string;
-  recipient: string;
   address: string;
   postcode?: string;
   phone?: string;
