@@ -1,20 +1,20 @@
 # Envo v1.0.1 · 交付清单与养护说明
 
-> 交付日期：2026-10-17
-> 上线 commit：`d7361fb`（master 分支）
+> 交付日期：2026-10-17  
+> 上线 commit：`d7361fb`（master 分支）  
 > 本次交付主题：**补全上线套件，不做功能扩张**
 
 ---
 
 ## 一、五项交付物
 
-| # | 交付物 | 位置 / 地址 |
-|---|---|---|
-| 1 | **可访问的站** | https://inliang.github.io/envo/ |
-| 2 | **代码仓** | https://github.com/Inliang/envo |
-| 3 | **部署配置** | `.github/workflows/deploy.yml`（push master 自动触发，Node 22 + `npm ci` + `vite build` + `actions/deploy-pages`） |
-| 4 | **上线检查表** | `docs/prelaunch-checklist.md`（49 项逐条判定） |
-| 5 | **养护与更新说明** | 本文档 |
+| # | 交付物         | 位置 / 地址                                                                                                     |
+| - | ----------- | ----------------------------------------------------------------------------------------------------------- |
+| 1 | **可访问的站**   | <https://inliang.github.io/envo/>                                                                           |
+| 2 | **代码仓**     | <https://github.com/Inliang/envo>                                                                           |
+| 3 | **部署配置**    | `.github/workflows/deploy.yml`（push master 自动触发，Node 22 + `npm ci` + `vite build` + `actions/deploy-pages`） |
+| 4 | **上线检查表**   | `docs/prelaunch-checklist.md`（49 项逐条判定）                                                                     |
+| 5 | **养护与更新说明** | 本文档                                                                                                         |
 
 配套文档（供后续维护查阅）：
 
@@ -28,6 +28,7 @@
 ## 二、本次 v1.0.1 改了什么
 
 ### 上线套件
+
 - favicon 全套 7 个（ico 含 16/32/48 三帧、svg、16×16、32×32、180 apple-touch、192、512）
 - OG 图 1200×630 PNG（253 KB）+ OG/Twitter 全套 meta
 - `sitemap.xml`（1 条 URL）、`robots.txt`、`site.webmanifest`
@@ -35,22 +36,26 @@
 - 完整 `<head>`：TDK / canonical / OG / Twitter Card / theme-color / `<noscript>` 兜底
 
 ### 字体本地化
+
 - 移除 Google Fonts 的 3 个外链（2 preconnect + 1 stylesheet）
 - **Canvas 字体栈独立于 UI 栈**：`ctx.font` 走 CSS font shorthand 严格解析，UI 栈里的 `-apple-system`/`BlinkMacSystemFont` 塞进去会被整条判为无效并静默忽略 → 信封回落到 10px 默认字体 → **预览正常但打印整批报废、控制台零报错**
 - 已加「赋值后读回校验」，不一致则 `console.warn`
 
 ### 数据保护（最高优先级）
+
 - `persist` 补 `migrate`（v1→v2）：保留 addresses / printHistory / settings / currentEnvelope，settings 深合并，失败回退默认值不抛错
 - `partialize` 排除 `currentRecipient`（防误印旧地址）
 - 老数据里的 `'Inter, sans-serif'` 全部替换为新字体栈
 
 ### 缺陷修复
+
 - **R2**：导入 JSON 时对已加密的 amapKey 二次加密 → 导入后 Key 乱码、联想静默失效
 - **R5**：用 11 位 `towncode` 冒充邮编 → 改为联想留空、邮编手填
   - 附带收益：联想不再触发第二次 API，**配额消耗减半**
   - 配套 **B6-B**：手填邮编可存入地址簿（否则 B6 会让邮编每次都要重填）
 
 ### 体验与无障碍
+
 - 41 条微文案订正（必改 25 条），含 5 处「邮编自动补全」虚假承诺清理
 - 次要文字对比度 `brand-400`（1.9:1）→ `brand-700`（5.0:1）达 WCAG AA
 - 主/强调按钮加深一档（白字 cta-500 上原仅 2.80:1）
@@ -62,16 +67,16 @@
 
 ## 三、上线后验证结果（实测，非推断）
 
-| 检查项 | 结果 |
-|---|---|
-| `/sitemap.xml` | 404 → **200**（`application/xml`） |
-| `/og-image.png` | 404 → **200**（`image/png`，259,483 B，与本地 md5 一致） |
-| `/favicon.ico`、`/site.webmanifest`、`/robots.txt` | 404 → **200** |
-| 线上 `<head>` | title/description/canonical/og:image:type 全部在位 |
-| Google Fonts 残留 | **0 处**（线上 v1.0.0 原有 3 条外链，已消失） |
-| 资源引用前缀 | 全部 `/envo/` 绝对路径 |
-| 首屏第三方请求 | **0 个**（高德 API 只在用户真正输入时才发起） |
-| 首页 Last-Modified | 2026-10-17（本次部署） |
+| 检查项                                              | 结果                                              |
+| ------------------------------------------------ | ----------------------------------------------- |
+| `/sitemap.xml`                                   | 404 → **200**（`application/xml`）                |
+| `/og-image.png`                                  | 404 → **200**（`image/png`，259,483 B，与本地 md5 一致） |
+| `/favicon.ico`、`/site.webmanifest`、`/robots.txt` | 404 → **200**                                   |
+| 线上 `<head>`                                      | title/description/canonical/og:image:type 全部在位  |
+| Google Fonts 残留                                  | **0 处**（线上 v1.0.0 原有 3 条外链，已消失）                 |
+| 资源引用前缀                                           | 全部 `/envo/` 绝对路径                                |
+| 首屏第三方请求                                          | **0 个**（高德 API 只在用户真正输入时才发起）                    |
+| 首页 Last-Modified                                 | 2026-10-17（本次部署）                                |
 
 **构建**：`npm run build` exit 0，19.75s，353 modules。
 
@@ -79,14 +84,14 @@
 
 ## 四、已知风险与缓解
 
-| 风险 | 等级 | 缓解 |
-|---|---|---|
-| **GitHub Pages 在中国大陆访问长期不稳定** | 🔴 | 实测本次从本环境访问 0.77s（经 japaneast 节点），**该数字不代表国内用户**。好消息是首屏第三方请求已降到 0，不会因第三方被墙而白屏。彻底解决需平台迁移，列 v1.1 |
-| **主包 1.08 MB（gzip 355 KB）未改善，反增 1.6%** | 🟡 | 不粉饰。本次重心是内容与无障碍，体积上的实际收益只有移除 Google Fonts 省下的 3 个跨域请求。jsPDF/xlsx 分包列 v1.1 |
-| **`robots.txt` 位于子路径，按 RFC 9309 爬虫不读** | 🟢 | 本策略为全 Allow，不存在即等于全允许，**实际影响为 0**。但**不要对外宣称「已配置 robots.txt」**。文件保留是为了迁到根路径时复用 |
-| 自定义尺寸 PDF 恒为 220×110mm（R4） | 🟡 | 列 v1.1，本次未修 |
-| 导入 JSON 无结构校验 | 🟡 | 列 v1.1 加白名单校验 |
-| `xlsx@0.18.5` 已知 CVE | 🟢 | 纯本地处理、不接收外部文件，实际风险低；换 CDN 源会动 lockfile，本次不升级 |
+| 风险                                     | 等级 | 缓解                                                                                            |
+| -------------------------------------- | -- | --------------------------------------------------------------------------------------------- |
+| **GitHub Pages 在中国大陆访问长期不稳定**          | 🔴 | 实测本次从本环境访问 0.77s（经 japaneast 节点），**该数字不代表国内用户**。好消息是首屏第三方请求已降到 0，不会因第三方被墙而白屏。彻底解决需平台迁移，列 v1.1 |
+| **主包 1.08 MB（gzip 355 KB）未改善，反增 1.6%** | 🟡 | 不粉饰。本次重心是内容与无障碍，体积上的实际收益只有移除 Google Fonts 省下的 3 个跨域请求。jsPDF/xlsx 分包列 v1.1                     |
+| **`robots.txt` 位于子路径，按 RFC 9309 爬虫不读** | 🟢 | 本策略为全 Allow，不存在即等于全允许，**实际影响为 0**。但**不要对外宣称「已配置 robots.txt」**。文件保留是为了迁到根路径时复用                 |
+| 自定义尺寸 PDF 恒为 220×110mm（R4）             | 🟡 | 列 v1.1，本次未修                                                                                   |
+| 导入 JSON 无结构校验                          | 🟡 | 列 v1.1 加白名单校验                                                                                 |
+| `xlsx@0.18.5` 已知 CVE                   | 🟢 | 纯本地处理、不接收外部文件，实际风险低；换 CDN 源会动 lockfile，本次不升级                                                  |
 
 ---
 
@@ -129,9 +134,7 @@ npm run preview  # 预览构建结果
 ### 收录操作（需你本人完成）
 
 在 Google Search Console 手动提交：
-```
-https://inliang.github.io/envo/sitemap.xml
-```
+
 `robots.txt` 里的 Sitemap 指向在子路径下不生效，GSC 手动提交是唯一有效途径。
 
 ### 改 localStorage 数据结构时（⚠️ 最危险的操作）

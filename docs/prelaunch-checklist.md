@@ -1,28 +1,30 @@
 # Envo v1.0.1 上线前检查清单
 
 > 检查人：郝收录（部署与 SEO 工程师）｜任务 ID：T5-DEPLOY
-> 检查时间：2026-10-17 18:07–18:20（本地时区）
+> 检查时间：2026-10-17 18:07–18:20（首轮）｜19:22–19:26（B7 复验 + 线上验证）
 > 检查对象：`E:\GitHub\envo` @ master ｜ 目标 URL：**https://inliang.github.io/envo/**
 > 判定口径：**每一项必须有可验证依据**（实际 grep 到了什么、文件是否存在、URL 实际返回什么）。没有「基本没问题」。
 
 **检查环境**：Node v22.22.2 / npm 10.9.7 / Windows / 本机安装的 Google Chrome（`--headless=new`，版本号未取到，故不写）
-**本次我执行的操作**：`npm run build`（1 次，允许项）、只读检查 `dist/` `public/`、本地 `vite preview` + 无头 Chrome 冒烟、对线上 URL 只读探测。
-**本次我没有执行的操作**：`git commit` / `git push`、`deploy.yml` 修改、`vite.config.ts` 修改、`src/` 修改、任何前端产出文件修改。
+**本次我执行的操作**：`npm run build`（2 次，允许项）、只读检查 `dist/` `public/`、本地 `vite preview` + 无头 Chrome 冒烟、对线上 URL 只读探测、`.gitignore` 追加 `.tmp`、清理 `.tmp/` 临时产物。
+**本次我没有执行的操作**：`git commit` / `git push`、`deploy.yml` 修改、`vite.config.ts` 修改、`src/` 修改、任何前端产出文件修改（`index.html` 的 `og:image:type` 由前端工程师加入，我只做构建与复验）。
+
+> **⚠️ 状态更新（2026-10-17 19:26）**：commit `d7361fb release: v1.0.1 上线交付` **已推送到 `origin/master`**，`Deploy to GitHub Pages` 工作流 **completed / success**，线上已切换为 v1.0.1。**F1–F7 上线后验证已实际执行完毕，全部通过**（见 F 节实测记录）。本文件因此从「上线前检查清单」升级为「上线检查记录」。
 
 ---
 
 ## 0. 结论速览
 
-| 组 | 项数 | PASS | FAIL | 已知限制/待裁决 |
+| 组 | 项数 | PASS | FAIL | 已知限制 |
 |---|---|---|---|---|
-| A 部署链路 | 11 | 10 | 0 | 1（A10 需用户肉眼确认） |
-| B 静态产物 | 18 | 17 | 0 | 1（B7 `og:image:type` 契约内不含，清单要求有冲突，待裁决） |
-| C SEO 与收录 | 10 | 8 | 0 | 2（C3 robots 子路径、C8 国内可访问性，均为如实记录的限制） |
+| A 部署链路 | 11 | 11 | 0 | 0（A10 已由实际部署结果证实） |
+| B 静态产物 | 18 | 18 | 0 | 0（B7 `og:image:type` 已补齐并复验） |
+| C SEO 与收录 | 10 | 8 | 0 | 2（C3 robots 子路径、C8 国内可访问性，如实记录、不可在本项目内消除） |
 | D 构建 | 5 | 5 | 0 | 0 |
 | E 性能 | 5 | 5 | 0 | 0 |
-| **合计** | **49** | **45** | **0** | **4** |
+| **合计** | **49** | **47** | **0** | **2** |
 
-**代码侧零 FAIL。** 4 项未决中，2 项是已知且已如实的工程限制，1 项是契约与清单要求冲突（非缺陷），1 项是必须由用户在 GitHub 网页端完成的一次性确认。
+**零 FAIL。** 仅剩 2 项已知限制（子路径 robots.txt 不被读取、GitHub Pages 国内访问不稳定），均已如实记录、无粉饰，且不影响本次上线的正确性。
 
 ---
 
@@ -115,6 +117,11 @@
 - **必须由用户做**：打开 `https://github.com/Inliang/envo/settings/pages` → **Build and deployment → Source**，确认下拉选中的是 **GitHub Actions**（不是 Deploy from a branch）。若不是，改选后 Save。
 - 只有用户账号有权限，我无法代做。
 
+> **✅ 补记（2026-10-17 19:26）——本项已由实际部署结果证实，无需再人工确认**
+>
+> commit `d7361fb` 推送后，`Deploy to GitHub Pages` 工作流被触发并 **completed / success**（11:23:01Z → 11:23:35Z，耗时 34 秒），随后线上页面由 v1.0.0 切换为 v1.0.1（title 已变、sitemap 由 404 转 200、og-image 由 404 转 200）。
+> **这一整条链路只有在 Pages Source = GitHub Actions 时才可能发生**——若是「Deploy from a branch」，推送只会更新分支内容，不会跑工作流、更不会自动部署构建产物。**据此 A10 判定升级为确定性 PASS**。用户仍可在 Settings 页面复核，但已无必要。
+
 ### A11 `base: '/envo/'` 与产物引用路径一致 —— **PASS**
 
 | 检查方法 | 依据 |
@@ -182,28 +189,32 @@ src="/envo/assets/index-4rZJl5bE.js"
 - **不通过的后果**：canonical 写成 `/envo`（无尾斜杠）会与服务器 301 行为打架；写成相对路径则完全失效。
 - 备注：`keywords` 在 `content-plan.md` §2.3 中被标为「本次不加」的契约外可选项，实际按该节给出的可选版加入了。无害（Google 忽略，对百度有微弱正收益），**不是缺陷**。
 
-### B7 Open Graph 全套 —— **PASS**（1 项契约内不含，待裁决）
+### B7 Open Graph 全套 —— **PASS（11/11 全项到位）**
 
-| 字段 | 是否在 `dist/index.html` | 判定 |
+> **2026-10-17 19:22 更新**：`og:image:type` 已由前端补齐并随 commit `d7361fb` 交付，我重新构建后复验通过。本项从「契约内不含」改为「已补」，不再是待裁决项。
+
+| 字段 | 值 | 判定 |
 |---|---|---|
-| `og:type` | 有（`website`） | PASS |
-| `og:site_name` | 有（`Envo 信封打印助手`） | PASS |
-| `og:locale` | 有（`zh_CN`） | PASS |
-| `og:url` | 有，与 canonical 逐字一致、带尾斜杠 | PASS |
-| `og:title` | 有，与 `<title>` 逐字一致 | PASS |
-| `og:description` | 有，与 `description` 逐字一致 | PASS |
-| `og:image` | 有，**绝对 URL** `https://inliang.github.io/envo/og-image.png` | PASS |
-| `og:image:width` | 有（1200） | PASS |
-| `og:image:height` | 有（630） | PASS |
-| `og:image:alt` | 有（`Envo 信封打印助手预览图`） | PASS |
-| **`og:image:type`** | **无** | **见下方裁决说明** |
+| `og:type` | `website` | PASS |
+| `og:site_name` | `Envo 信封打印助手` | PASS |
+| `og:locale` | `zh_CN` | PASS |
+| `og:url` | `https://inliang.github.io/envo/`（与 canonical 逐字一致、带尾斜杠） | PASS |
+| `og:title` | 与 `<title>` 逐字一致 | PASS |
+| `og:description` | 与 `description` 逐字一致 | PASS |
+| `og:image` | `https://inliang.github.io/envo/og-image.png`（绝对 URL） | PASS |
+| `og:image:width` | `1200` | PASS |
+| `og:image:height` | `630` | PASS |
+| `og:image:alt` | `Envo 信封打印助手预览图` | PASS |
+| **`og:image:type`** | **`image/png`**（本次补齐） | **PASS** |
 
-**关于 `og:image:type` 的裁决说明（请团队-lead 拍板）**
+**补记（2026-10-17 19:22）**
 
-- 任务清单把 `og:image:type` 列为必查项，但 **`content-plan.md` §3.2 L226 明确写了不写**：「未写 `og:image:type`：T1 契约未包含，且 `width`/`height` 已足够；PNG 是唯一格式不会歧义」。
-- 我按契约判定为 **PASS（契约内不含）**，不是漏做。
-- 客观影响：`og:image:type` 缺失时，主流平台（微信 / 微博 / X / Facebook）都能靠 URL 后缀与 width/height 正常出图，**不会导致卡片降级**。它属于「有则更好」而非「缺则坏」。
-- **我的建议**：本次不动。理由：改它要动 `index.html`，而 `index.html` 已按契约冻结；且本次是上线窗口，为一个无实际收益的字段开一次前端改动不划算。**若要补，列 v1.1**，改动是加一行 `<meta property="og:image:type" content="image/png" />`。
+- 前端在 `index.html` L34 加入 `<meta property="og:image:type" content="image/png" />`。
+- 我重新执行 `npm run build`：exit 0，vite build 12.41 s，353 modules。
+- **增量验证**：`index.html` 由 5,663 B → **5,721 B（+58 B）**；JS/CSS 产物 hash **未变**（仍为 `index-4rZJl5bE.js` / `index-COuMzPEq.css`）→ 本次改动只落在 HTML，未触碰任何脚本与样式。
+- **回归复验全过**：title / canonical / keywords 不变；JSON-LD 解析通过（16 键、featureList 11 条、`aggregateRating`/`review`/`author` 仍全 False）；Google Fonts 计数 0；`<noscript>` 在；11 个契约文件 md5 11/11 一致；8 条资源引用仍全部 `/envo/` 绝对路径。
+- **渲染复验**：无头 Chrome 重新渲染，`#root` 渲染成功，控制台 JS 报错 **0 条**，产物中确含 `og:image:type`。
+- 原「契约内不含」的判断依据（`content-plan.md` §3.2 L226）仍然有效——**缺它不会导致卡片降级**。本次补齐是交付定位（补全上线套件）的选择，不是修缺陷。
 
 ### B8 Twitter Card —— **PASS**
 
@@ -515,7 +526,18 @@ src="/envo/assets/index-4rZJl5bE.js"
 
 - 首屏 0 个第三方域名请求 → 无第三方 DNS 查询、无第三方 TLS 握手。对国内访问尤其重要。
 
-> **关于首屏加载时间与 LCP**：本次只做了**本地**预览 + 无头 Chrome 渲染冒烟，**没有对线上做真实 LCP 测量**（线上当前是 v1.0.0，测了也不代表 v1.0.1）。**上线后必须实测**，见 F4。我不提前给「很快」这种结论。
+> **E 组结论更新（19:35）**：v1.0.1 上线后已补测首屏指标。**PSI 公开 API 匿名配额为 0/天（HTTP 429），CrUX 匿名 403，两者均需 API Key**，故改用**本地 Lighthouse 12.8.2** 直连线上 URL 实测。
+>
+> | | **移动端** | **桌面端** |
+> |---|---|---|
+> | **LCP** | **2.9 s**（指标分 0.80） | **0.8 s**（指标分 0.98） |
+> | **FCP** | **2.8 s**（0.55） | **0.8 s**（0.96） |
+> | **CLS** | **0**（1.00） | **0**（1.00） |
+> | **TBT** | **0 ms**（1.00） | **0 ms**（1.00） |
+> | **性能总分** | **89** | **99** |
+>
+> **移动端 LCP 2.9 s 未达 2.5 s 目标**；根因是首屏 355 KB gzip 主包中有 **268,915 B 未使用 JS**，且 LCP 元素由 JS 渲染后被阻塞。**完整数据、口径限定与 v1.1 优化建议见第 5 节。**
+> 早前记录的 TTFB 0.77 s 只是 TTFB，**不是 LCP，两者不可互相替代**。
 
 ### E6 无头 Chrome 渲染冒烟 —— **PASS**
 
@@ -534,46 +556,77 @@ src="/envo/assets/index-4rZJl5bE.js"
 
 ---
 
-## F. 上线后验证步骤（**需用户批准后执行**，我目前未执行下列任何对生产环境的写操作）
+## F. 上线后验证 —— **已实测执行（2026-10-17 19:24–19:26）**
 
-| # | 步骤 | 命令 / 方法 | 通过标准 |
-|---|---|---|---|
-| F1 | 首页可达 | 打开 `https://inliang.github.io/envo/` | HTTP 200，页面标题为 `信封打印助手 Envo - 在线排版信封，支持 DL/C5/C4 与 PDF 导出` |
-| F2 | sitemap 可达 | `curl -I https://inliang.github.io/envo/sitemap.xml` | HTTP 200（当前线上为 **404**，因旧版产物里没有该文件） |
-| F3 | OG 图 URL 返回 200 | `curl -I https://inliang.github.io/envo/og-image.png` | HTTP 200 且 `Content-Type: image/png`（当前线上为 **404**） |
-| F4 | canonical 正确 | 浏览器查看源码 | `rel="canonical" href="https://inliang.github.io/envo/"` |
-| F5 | 首屏实测 | PageSpeed Insights 跑 `https://inliang.github.io/envo/` | 记录 LCP / FCP 真实数字，回填 E 组 |
-| F6 | 图标可达 | 逐个 curl favicon.ico / favicon.svg / apple-touch-icon.png / icon-192.png / icon-512.png | 全部 200 |
-| F7 | 无 Google Fonts | 查看源码 | 无 `fonts.googleapis.com`（当前线上**有 3 条**，本次推送后应消失） |
-| F8 | GSC 提交 sitemap | Search Console → Sitemaps → 提交 `https://inliang.github.io/envo/sitemap.xml` | 状态「Success」 |
+**部署事实**：commit `d7361fb` → push master → 工作流 `Deploy to GitHub Pages` **completed / success**（11:23:01Z → 11:23:35Z，**34 秒**）→ 线上已切换为 v1.0.1。
 
-> 我未执行 F8（需用户登录 GSC）。F1–F7 待 push 完成后由用户批准即可执行。
+### F0 工作流运行状态 —— **PASS**
+
+| 项 | 实测 |
+|---|---|
+| 工作流名 | `Deploy to GitHub Pages` |
+| head_sha | `d7361fb` |
+| 状态 / 结论 | **completed / success** |
+| 起止时间 | 2026-10-17T11:23:01Z → 11:23:35Z（**34 秒**，含拉起环境、npm ci、build、部署） |
+
+> 一次通过，无重试。同仓库上一次成功部署是 2026-08-01 的 `a550a78`（v1.0.0）。
+
+### F1–F7 实测结果
+
+| # | 步骤 | 通过标准 | **实测结果** | 判定 |
+|---|---|---|---|---|
+| F1 | 首页可达 | HTTP 200 + 新标题 | **HTTP 200**，`<title>` = `信封打印助手 Envo - 在线排版信封，支持 DL/C5/C4 与 PDF 导出`（已是 v1.0.1 文案，非 v1.0.0 的 `Envo - 信封打印助手`） | **PASS** |
+| F2 | sitemap 可达 | HTTP 200 | **HTTP 200**（部署前为 **404**） | **PASS** |
+| F3 | OG 图返回 200 | HTTP 200 + `image/png` | **HTTP 200**，size **259,483 B**，`Content-Type: image/png`（部署前为 **404**） | **PASS** |
+| F4 | canonical 正确 | 绝对 URL 带尾斜杠 | `rel="canonical" href="https://inliang.github.io/envo/"` | **PASS** |
+| F5 | 首屏 LCP 实测 | 记录真实数字 | ⚠️ **PSI API 不可用（匿名配额 0/天，HTTP 429）**，改用**本地 Lighthouse 12.8.2** 直连线上 URL 实测：移动端 LCP **2.9 s** / 性能 **89** 分；桌面端 LCP **0.8 s** / 性能 **99** 分。**详见第 5 节**（含三条口径限定：非 PSI 节点、非国内体验、非真实用户数据） | **PASS（以替代方案完成）** |
+| F6 | 图标可达 | 全部 200 | favicon.ico / favicon.svg / apple-touch-icon.png / icon-192.png / icon-512.png / favicon-16x16.png / favicon-32x32.png —— **7/7 全 200** | **PASS** |
+| F7 | 无 Google Fonts | 源码中 0 处 | **0 处**（部署前线上有 **3 条** Google Fonts 外链，已消失） | **PASS** |
+| F8 | GSC 提交 sitemap | 状态 Success | **未执行** —— 需用户登录 Google Search Console | 待用户做 |
+
+**附加实测**：`og:image:type" content="image/png"` 已在线上产物中确认存在（B7 补齐生效）。
+
+> F2 与 F3 从 404 → 200 是**本次部署真正生效的最强证据**——这两个文件在 v1.0.0 的产物里根本不存在。
+> F7 从 3 条 → 0 条，证明字体本地化已随产物上线。
 
 ---
 
 ## 1. 我的判定
 
-### 判定：**可上线（技术项 45/45 PASS，代码侧零 FAIL）**
+### 判定：**已上线 —— 技术项 47/47 PASS，零 FAIL，线上验证通过**
 
-前提是两个**用户侧操作**必须做到位，它们是上线动作本身，不是代码缺陷：
+> **2026-10-17 19:26 更新**：首轮判定「可上线」的三个前提（X1/X2/X3）**全部已满足**，站点已实际部署并通过 F1–F7 线上验证。判定从「可上线」升级为「**已上线**」。
 
-1. **提交时必须把 `public/`（11 个文件）与 `src/components/ConfirmDialog.tsx` 加进版本库** —— 这是目前**唯一可能让 CI 出事的地方**。
-2. **GitHub Pages 的 Source 必须是 GitHub Actions** —— 我无法读取该配置，需用户肉眼确认一次。
+### 三个前置阻塞项的关闭情况
 
-### 阻塞项（若不处理，本次上线会失败）
-
-| # | 阻塞项 | 为什么会失败 | 必须谁做 |
+| # | 阻塞项 | 首轮状态 | **现状（已核对）** |
 |---|---|---|---|
-| **X1** | `public/` 尚未纳入版本库（远端 `GET /repos/Inliang/envo/contents/public?ref=master` 返回空，本地 `public/` 仍是 `??` 未跟踪状态） | 若只 `git commit -am` 提交改动文件，`public/` 不会被带上 → CI 构建出的 `dist/` **没有 og-image / favicon / sitemap / robots / manifest**，页面上线后分享是灰图、sitemap 404、图标 404，且 **Actions 全绿看不出问题** | 用户（提交时显式 `git add public/`） |
-| **X2** | `src/components/ConfirmDialog.tsx` 未跟踪 | 该文件被地址簿与打印历史引用，若未提交 → CI 里 `tsc -b` 直接报模块找不到，**构建失败、不会部署** | 用户（提交时显式 add） |
-| **X3** | Pages Source 未在网页端确认为 GitHub Actions | 若实际是「Deploy from a branch」，推 master 后 Actions 全绿但页面停留在 v1.0.0 | 用户（Settings → Pages） |
+| **X1** | `public/` 未纳入版本库 | 远端 `public/` 为空、本地 `??` | ✅ **已关闭** —— `git ls-files public/` 列出 **11/11** 文件，且已随 `d7361fb` 推送到 `origin/master`；线上 F2/F3/F6 实测 200 佐证产物里确实带着它们 |
+| **X2** | `ConfirmDialog.tsx` 未跟踪 | 本地 `??` | ✅ **已关闭** —— `git ls-files` 已纳入；工作流 `tsc -b` 通过、`completed / success` 佐证 |
+| **X3** | Pages Source 需确认为 GitHub Actions | 无法读取配置 | ✅ **已关闭（且是确定性关闭）** —— 推送后工作流自动触发并成功部署、线上内容随之更新，**这一整条链路只有 Source = GitHub Actions 时才可能发生** |
 
-> 补充：`docs/` 也未跟踪。若希望三份文档入仓，提交时一并 `git add docs/`；不入库也不影响站点运行。
-> 补充：工作区存在 `.tmp/`（我本次的临时产物残留，删除时被工具拒绝），**提交时不要包含它**。建议 `.gitignore` 加一行 `.tmp`（是否改 `.gitignore` 由你定，我没擅自改）。
+### 仍然成立的已知限制（不影响本次上线正确性，不粉饰）
+
+1. **`robots.txt` 位于子路径 `/envo/robots.txt`，按 RFC 9309 爬虫不读取**（C3）。因策略为全 Allow，实际影响为 0。主机根 `https://inliang.github.io/robots.txt` 实测返回 GitHub「Site not found」。**不要对外宣称「已配置 robots.txt」。**
+2. **GitHub Pages 在中国大陆访问不稳定**（C8）。本项目内无法解决，列 v1.1 平台迁移议题。
+
+### 遗留待办（不阻塞，但需有人认领）
+
+| # | 事项 | 谁做 |
+|---|---|---|
+| 1 | **F5 首屏 LCP 实测**（PageSpeed Insights 跑 `https://inliang.github.io/envo/`） | 待用户批准后我来跑，或用户自测 |
+| 2 | **F8 GSC 手动提交 `https://inliang.github.io/envo/sitemap.xml`** | 用户（需 Google 账号） |
+| 3 | 主包 1.03 MiB 未分包（jsPDF / xlsx 已动态化，仅剩主包自身） | v1.1 |
+
+> 补充：`.tmp/` 已清理（23.5 MB / 431 个 Chrome 临时文件），并在 `.gitignore` 末尾追加 `.tmp` 防复发；该改动已随 `d7361fb` 提交。当前 `git status` **工作区干净**。
 
 ---
 
-## 2. 上线操作说明（用户批准后执行）
+## 2. 上线操作说明
+
+> **已执行完毕（2026-10-17 19:21–19:23）**，保留原文作为下次发布的可复用手册。实际发生的提交是：
+> commit **`d7361fb release: v1.0.1 上线交付`**（含 `public/` 11 文件、`ConfirmDialog.tsx`、`docs/`、`.gitignore` 的 `.tmp` 行），推送后工作流 34 秒跑完、一次成功。
+> **若需回滚或发布 v1.0.2，按本节原样操作即可。**
 
 ### 2.1 提交与推送
 
@@ -649,25 +702,79 @@ git show --stat --name-only HEAD   # 应能看到 public/ 下 11 个文件 + Con
 
 ---
 
-## 4. 必须由用户自己完成的步骤清单
+## 4. 必须由用户自己完成的步骤清单（**当前剩余情况**）
 
-| # | 事项 | 为什么只能用户做 |
+| # | 事项 | 状态 |
 |---|---|---|
-| U1 | Settings → Pages → Source 确认为 **GitHub Actions** | 需要 GitHub 账号权限，我无仓库授权 |
-| U2 | 提交时 `git add public/` + `git add src/components/ConfirmDialog.tsx` | 上线批准权在用户；我不得执行 commit/push |
-| U3 | 执行 push 触发部署 | 同上 |
-| U4 | GSC 提交 `https://inliang.github.io/envo/sitemap.xml`（F8） | 需要 Google 账号 |
-| U5 | 决定是否把 `docs/` 入仓、是否把 `.tmp` 加入 `.gitignore` | 仓库管理决策 |
-| U6 | **裁决 `og:image:type` 是否补（B7）** | 契约与清单要求冲突，需拍板；我的建议是本次不动、列 v1.1 |
-| U7 | 若面向国内用户，决策是否迁移出 GitHub Pages（C8） | 平台选型，v1.1 议题 |
+| U1 | Settings → Pages → Source 确认为 GitHub Actions | ✅ **已完成（且已由部署结果自动证明）**，无需再操作 |
+| U2 | 提交时 `git add public/` + `git add src/components/ConfirmDialog.tsx` | ✅ **已完成** —— 随 `d7361fb` 入库，两者均已确认 |
+| U3 | 执行 push 触发部署 | ✅ **已完成** —— `d7361fb` 已推送，工作流一次成功 |
+| U4 | **GSC 提交 `https://inliang.github.io/envo/sitemap.xml`（F8）** | ⬜ **待用户做** —— 需 Google 账号。**这是当前唯一必须用户亲自做的事项** |
+| U5 | `docs/` 入仓、`.tmp` 加入 `.gitignore` | ✅ **已完成** —— 两者均随 `d7361fb` 提交 |
+| U6 | 裁决 `og:image:type` 是否补（B7） | ✅ **已裁决：本次补** —— 前端已加，我复验通过，已上线 |
+| U7 | 若面向国内用户，决策是否迁移出 GitHub Pages（C8） | ⬜ **v1.1 议题** —— 不阻塞本次 |
+
+**剩余待办只有两项**：**U4（GSC 提交 sitemap，需用户 Google 账号）** 与 **F5（LCP 实测，需 PSI）**。
 
 ---
 
-## 5. 上线后建议观察的 2–3 个指标
+## 5. 首屏性能实测（F5）与上线后观察指标
 
-1. **URL 收录状态**（GSC，提交 sitemap 后 1–2 周）：`https://inliang.github.io/envo/` 是否被索引。这是唯一能验证 TDK/OG/JSON-LD 那一整套工作真的生效的指标。
-2. **首屏 LCP**（PageSpeed Insights 实测 `https://inliang.github.io/envo/`）：本次主包 1.03 MiB，需要一个真实数字来决定 v1.1 是否必须做 `manualChunks` 分包。目标 < 2.5 s。
-3. **Actions 部署成功率**：首次 push 是否一次通过。若 X1/X2 没做到位，这里会是最先暴露的地方。
+### 5.1 ⚠️ 先说测量口径：这不是 PageSpeed Insights
+
+**PSI 公开 API 本次不可用，实测失败，原因如实记录：**
+
+| API | 实测结果 |
+|---|---|
+| `pagespeedonline.googleapis.com/v5/runPagespeed`（strategy=mobile） | **HTTP 429**，`status: RESOURCE_EXHAUSTED`，`quota_limit_value: **0**`，`quota_limit: defaultPerDayPerProject` —— **匿名调用配额为 0/天，必须带 API Key** |
+| 同上（strategy=desktop，换参数重试） | **HTTP 429**，同上，**确认非瞬时抖动** |
+| `chromeuxreport.googleapis.com/v1/records:queryRecord`（CrUX 真实用户数据） | **HTTP 403** `PERMISSION_DENIED` —— 「Method doesn't allow unregistered callers」，同样需要 API Key |
+
+**因此改用本地 Lighthouse 直连线上 URL 实测。** 下面的数字来自：
+
+| 项 | 值 |
+|---|---|
+| 工具 | **Lighthouse 12.8.2**（`npx lighthouse`，非 PSI） |
+| 被测 URL | `https://inliang.github.io/envo/`（线上 v1.0.1 正式环境，不是本地预览） |
+| 浏览器 | 本机 Chrome，`--headless=new` |
+| 节流方式 | `simulate`（模拟节流，移动端按 Slow 4G 档） |
+| 测量时间 | 2026-10-17 11:33:53Z（移动）/ 11:34:37Z（桌面） |
+| 数据性质 | **实验室数据（lab data）**，**不是 CrUX 真实用户数据（field data）** |
+
+> ### ⚠️ 三条必须一起读的限定，缺一条都会误导人
+>
+> 1. **这不是 PSI 的机房节点。** Lighthouse 跑在本机，请求打到 GitHub Pages 的 **japaneast** 边缘节点。
+> 2. **这更不等于国内用户体验（重要）。** 中国大陆访问 GitHub Pages 长期不稳定（见 C8）。**下面所有数字只代表「境外可达路径 + 本机网络」下的实验室表现，国内用户可能连不上，也可能慢得多。不要拿这组数字对外宣称「站点很快」。**
+> 3. **移动端 2.9 s 是在模拟 Slow 4G 节流下算出的**，真实网络下会更好或更差，取决于用户实际带宽。
+
+### 5.2 实测结果
+
+| 指标 | **移动端**（form-factor=mobile） | **桌面端**（preset=desktop） | 目标 | 移动端达标 | 桌面端达标 |
+|---|---|---|---|---|---|
+| **性能总分** | **89** / 100 | **99** / 100 | — | — | — |
+| **LCP**（最大内容绘制） | **2.9 s**（指标分 0.80） | **0.8 s**（指标分 0.98） | < 2.5 s | ❌ **超 0.4 s** | ✅ |
+| **FCP**（首次内容绘制） | **2.8 s**（指标分 0.55） | **0.8 s**（指标分 0.96） | < 1.8 s | ❌ 超 1.0 s | ✅ |
+| **CLS**（累积布局偏移） | **0**（1.00） | **0**（1.00） | < 0.1 | ✅ 完美 | ✅ 完美 |
+| **TBT**（总阻塞时间） | **0 ms**（1.00） | **0 ms**（1.00） | < 200 ms | ✅ 完美 | ✅ 完美 |
+| Speed Index | 3.5 s | 0.8 s | — | — | — |
+| TTI（可交互时间） | 2.9 s | 0.8 s | — | — | — |
+| 服务器响应 | 290 ms | 100 ms | — | — | — |
+| 请求数 / 传输总量 | 8 个 / **375,320 B** | 8 个 / **375,316 B** | — | — | — |
+
+**LCP 元素**：移动端是 `<h1 class="text-lg font-semibold text-brand-900 leading-tight">`，桌面端是 `<p class="text-[13px] leading-6 text-slate-500">` —— 两者都是 **JS 渲染后才出现的 DOM**，印证了 SPA 的 LCP 被主包执行阻塞。
+
+### 5.3 结论（诚实版）
+
+- **好消息**：**CLS = 0、TBT = 0 ms** —— 布局零偏移、主线程零阻塞，这两项拿到满分，说明排版稳定性和脚本执行效率没问题。桌面端总分 99，几乎无可挑剔。
+- **坏消息**：**移动端 LCP 2.9 s 未达 2.5 s 目标**，FCP 2.8 s 也未达 1.8 s。桌面端不受影响（0.8 s），**问题只出在弱网 + 移动档**。
+- **根因明确**：首屏要背 **355 KB gzip** 的主包，其中 **268,915 B（约 263 KB）是未使用 JS**（Lighthouse 唯一报出的优化机会，桌面端可省 200 ms）。LCP 元素是 JS 渲染出来的 `<h1>`，**主包不执行完，LCP 就不会发生**。
+- **v1.1 的处置建议**：`manualChunks` 拆分 + 路由级懒加载，把 268,915 B 未使用 JS 从首屏剥离。**这是本次唯一有实测数据支撑的性能优化点**，优先级高于任何凭感觉的优化。
+
+### 5.4 上线后建议观察的指标
+
+1. **URL 收录状态**（GSC，提交 sitemap 后 1–2 周）：`https://inliang.github.io/envo/` 是否被索引。这是唯一能验证 TDK / OG / JSON-LD 那一整套工作真的生效的指标。**前提是先完成 U4。**
+2. **真实用户 LCP**（需 API Key 跑 PSI 或 CrUX）：本次只能给实验室数据。**若要拿真实用户数据，必须先申请 Google API Key** —— 匿名通道已确认关闭（配额 0/天）。
+3. **Actions 部署成功率**：✅ **已观察，首次 push 即一次通过**（34 秒，无重试）。后续每次发布继续保持即可。
 
 ---
 
@@ -676,14 +783,21 @@ git show --stat --name-only HEAD   # 应能看到 public/ 下 11 个文件 + Con
 | 操作 | 结果 |
 |---|---|
 | `npm ci --dry-run`（隔离空目录） | exit 0 / added 219 packages |
-| `npm run build` | exit 0 / 19.75 s / 353 modules |
-| md5 比对 `public/` vs `dist/`（11 文件） | 11/11 一致 |
+| `npm run build`（首轮 18:10） | exit 0 / 19.75 s 墙钟（vite 12.19 s）/ 353 modules |
+| `npm run build`（B7 复验 19:22） | exit 0 / vite 12.41 s / 353 modules；`index.html` 5,663 → **5,721 B（+58 B）**；JS/CSS hash **未变** |
+| md5 比对 `public/` vs `dist/`（11 文件） | 11/11 一致（复验后仍 11/11） |
 | PNG IHDR 解析（6 图） | 尺寸全部符合契约 |
 | TDK/OG/Twitter 逐字比对（8 串） | 8/8 与 `content-plan.md` 一致 |
-| `json.loads()` 解析 JSON-LD | 通过 / 16 键 / featureList 11 条 / 无 aggregateRating、review、author |
+| **OG 11 字段逐项核对（复验）** | **11/11 含 `og:image:type` = `image/png`** |
+| `json.loads()` 解析 JSON-LD | 通过 / 16 键 / featureList 11 条 / 无 aggregateRating、review、author（复验后仍全 False） |
 | 违禁词扫描 `dist/index.html` | 「邮编自动补全」0 处 |
-| Google Fonts 扫描（`dist/`、`src/`、`index.html`） | 0 处 |
+| Google Fonts 扫描（`dist/`、`src/`、`index.html`） | 0 处（线上复验亦为 0） |
 | 本地 preview 13 个 URL curl | 13/13 HTTP 200 |
-| 无头 Chrome 渲染（桌面 + 移动） | 均渲染成功 / JS 报错 0 |
-| 线上探测 | `https://inliang.github.io/envo/` 200（v1.0.0，2026-08-01）；`/envo/sitemap.xml` 404；`/envo/og-image.png` 404；`/envo`（无尾斜杠）→ 200 落在 `/envo/`；主机根 `robots.txt` → GitHub「Site not found」 |
-| 远端 API | `GET /repos/Inliang/envo/branches` → 仅 master；`GET .../contents/public?ref=master` → 空；`GET .../pages` → 404（无权限读取） |
+| 无头 Chrome 渲染（桌面 + 移动） | 均渲染成功 / JS 报错 0（复验再跑一次，仍 0 报错） |
+| 上线前线上探测 | `/envo/` 200（v1.0.0，2026-08-01）；`/envo/sitemap.xml` **404**；`/envo/og-image.png` **404**；`/envo`（无尾斜杠）→ 200 落在 `/envo/`；主机根 `robots.txt` → GitHub「Site not found」 |
+| 远端 API（上线前） | `GET /repos/Inliang/envo/branches` → 仅 master；`GET .../contents/public?ref=master` → 空；`GET .../pages` → 404（无权限读取） |
+| **工作流运行查询（上线后）** | `GET /repos/Inliang/envo/actions/runs` → `Deploy to GitHub Pages` / `d7361fb` / **completed / success** / 11:23:01Z → 11:23:35Z（34 s） |
+| **线上验证 F1–F8（上线后）** | 首页 **200** 且 title 为 v1.0.1 文案；sitemap **404→200**；og-image **404→200**（259,483 B / image/png）；canonical 正确；图标 **7/7 全 200**；Google Fonts **3 条→0 条**；`og:image:type` 线上确认存在 |
+| **PSI API 尝试（F5）** | `runPagespeed` mobile → **429**（`quota_limit_value=0`，匿名配额 0/天）；desktop 重试 → **429**（非瞬时）；CrUX `queryRecord` → **403**（需 API Key）。**三条通道全部不可用，无一条数字来自编造** |
+| **Lighthouse 实测替代（F5）** | v12.8.2 直连线上 URL，`simulate` 节流 —— 移动端 **LCP 2.9 s / FCP 2.8 s / CLS 0 / TBT 0 ms / 总分 89**；桌面端 **LCP 0.8 s / FCP 0.8 s / CLS 0 / TBT 0 ms / 总分 99**；请求 8 个 / 传输 375,320 B；未使用 JS **268,915 B** |
+| 清理 | `.tmp/` 已删除（23,513,168 B / 431 文件）；`.gitignore` 追加 `.tmp`；根目录临时抓取文件已删；`git status` 工作区干净 |
