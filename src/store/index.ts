@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Address, PrintRecord, AppSettings, TabKey, EnvelopeSettings, SenderInfo } from './types';
+import { CANVAS_FONT_STACK } from './types';
 import { encrypt, decrypt } from '../utils/encryption';
 
 interface AppState {
@@ -26,6 +27,14 @@ interface AppState {
   setCurrentEnvelope: (s: Partial<EnvelopeSettings>) => void;
 }
 
+/** persist 落盘的数据形态（site-spec §5.2.4：排除 activeTab / currentRecipient） */
+interface PersistedShape {
+  addresses: Address[];
+  printHistory: PrintRecord[];
+  settings: AppSettings;
+  currentEnvelope: EnvelopeSettings;
+}
+
 function genId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
@@ -40,7 +49,7 @@ const DEFAULT_SENDER: SenderInfo = {
 const DEFAULT_ENVELOPE: EnvelopeSettings = {
   size: 'DL',
   fontSize: 14,
-  fontFamily: 'Inter, sans-serif',
+  fontFamily: CANVAS_FONT_STACK,
   showReturnAddress: true,
   showLogo: false,
 };
@@ -50,6 +59,80 @@ const DEFAULT_SETTINGS: AppSettings = {
   defaultEnvelope: DEFAULT_ENVELOPE,
   amapKey: '',
 };
+
+/* ═══════════════════════════════════════════════════════════════
+ * 迁移辅助（site-spec §5.2.4 冻结契约）
+ * 铁律：任何异常都不能抛出 —— 迁移失败回退默认值，绝不能白屏。
+ * ═══════════════════════════════════════════════════════════════ */
+
+/** 老 v1 数据里的 'Inter, sans-serif' 已废弃；含 Inter 或为空的字体栈一律替换为新栈 */
+function fixFontFamily(value: unknown): string {
+  if (typeof value === 'string' && value.trim() && !value.includes('Inter')) {
+    return value;
+  }
+  return CANVAS_FONT_STACK;
+}
+
+function mergeEnvelope(persisted: unknown): EnvelopeSettings {
+  const base = persisted && typeof persisted === 'object' ? (persisted as Partial<EnvelopeSettings>) : {};
+  const fontSize = typeof base.fontSize === 'number' && Number.isFinite(base.fontSize) ? base.fontSize : DEFAULT_ENVELOPE.fontSize;
+  return {
+    ...DEFAULT_ENVELOPE,
+    ...base,
+    fontSize,
+    fontFamily: fixFontFamily(base.fontFamily),
+    showReturnAddress: typeof base.showReturnAddress === 'boolean' ? base.showReturnAddress : DEFAULT_ENVELOPE.showReturnAddress,
+    showLogo: typeof base.showLogo === 'boolean' ? base.showLogo : DEFAULT_ENVELOPE.showLogo,
+  };
+}
+
+function mergeSettings(persisted: unknown): AppSettings {
+  const base = persisted && typeof persisted === 'object' ? (persisted as Partial<AppSettings>) : {};
+  const sender = base.defaultSender && typeof base.defaultSender === 'object' ? base.defaultSender : {};
+  return {
+    defaultSender: { ...DEFAULT_SENDER, ...sender },
+    defaultEnvelope: mergeEnvelope(base.defaultEnvelope),
+    amapKey: typeof base.amapKey === 'string' ? base.amapKey : '',
+  };
+}
+
+/**
+ * v1 → v2 迁移（site-spec §5.2.4）：
+ * 保留 addresses / printHistory / settings / currentEnvelope 四项业务数据，
+ * 丢弃 activeTab / currentRecipient 两个 UI 瞬时态；
+ * settings 做深合并（缺字段补默认值），失败回退默认值且绝不抛错。
+ */
+export function migratePersisted(persisted: unknown, _from: number): PersistedShape {
+  try {
+    const p = (persisted ?? {}) as Partial<PersistedShape>;
+    return {
+      addresses: Array.isArray(p.addresses) ? p.addresses : [],
+      printHistory: Array.isArray(p.printHistory) ? p.printHistory : [],
+      settings: mergeSettings(p.settings),
+      currentEnvelope: mergeEnvelope(p.currentEnvelope),
+    };
+  } catch (e) {
+    console.warn('[envo] 本地数据迁移失败，已回退到默认设置', e);
+    return {
+      addresses: [],
+      printHistory: [],
+      settings: DEFAULT_SETTINGS,
+      currentEnvelope: DEFAULT_ENVELOPE,
+    };
+  }
+}
+
+export { DEFAULT_ENVELOPE, DEFAULT_SETTINGS };
+
+/** 只持久化业务数据；activeTab（落地必须回编辑页）与 currentRecipient（防误印旧地址）显式排除 */
+export function partializeState(state: AppState): PersistedShape {
+  return {
+    addresses: state.addresses,
+    printHistory: state.printHistory,
+    settings: state.settings,
+    currentEnvelope: state.currentEnvelope,
+  };
+}
 
 export const useStore = create<AppState>()(
   persist(
@@ -126,7 +209,9 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'envelope-printer-storage',
-      version: 1,
+      version: 2,
+      partialize: partializeState,
+      migrate: migratePersisted,
     }
   )
 );

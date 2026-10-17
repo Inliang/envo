@@ -3,13 +3,89 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Envo - 信封打印助手</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <!-- TDK：逐字取自 docs/content-plan.md §2.1 定稿 -->
+    <title>信封打印助手 Envo - 在线排版信封，支持 DL/C5/C4 与 PDF 导出</title>
+    <meta name="description" content="Envo 是免费的在线信封打印助手：填写寄件人与收件人，选择 ZL/DL/C5/C4 等信封规格，实时预览排版，一键打印或导出 PDF；支持批量打印，数据只存本地，不上传服务器。" />
+    <meta name="keywords" content="信封打印,信封打印模板,在线打印信封,信封尺寸,批量打印信封,信封地址打印,导出PDF,地址簿" />
+    <link rel="canonical" href="https://inliang.github.io/envo/" />
+    <meta name="robots" content="index,follow,max-image-preview:large" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- 图标（命名以 site-spec §5.4 裁决 3 统一清单为准） -->
+    <link rel="icon" href="/envo/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/envo/favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/envo/favicon-32x32.png" />
+    <link rel="icon" href="/envo/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/envo/apple-touch-icon.png" />
+    <link rel="manifest" href="/envo/site.webmanifest" />
+    <meta name="theme-color" content="#0D9488" />
+
+    <!-- Open Graph（title/description 与上方 TDK 同源，不得出现第二套文案） -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Envo 信封打印助手" />
+    <meta property="og:locale" content="zh_CN" />
+    <meta property="og:url" content="https://inliang.github.io/envo/" />
+    <meta property="og:title" content="信封打印助手 Envo - 在线排版信封，支持 DL/C5/C4 与 PDF 导出" />
+    <meta property="og:description" content="Envo 是免费的在线信封打印助手：填写寄件人与收件人，选择 ZL/DL/C5/C4 等信封规格，实时预览排版，一键打印或导出 PDF；支持批量打印，数据只存本地，不上传服务器。" />
+    <meta property="og:image" content="https://inliang.github.io/envo/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:alt" content="Envo 信封打印助手预览图" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="信封打印助手 Envo - 在线排版信封，支持 DL/C5/C4 与 PDF 导出" />
+    <meta name="twitter:description" content="填写寄件人与收件人，选择 ZL/DL/C5/C4 等信封规格，实时预览排版，一键打印或导出 PDF；支持批量打印，数据只存本地。" />
+    <meta name="twitter:image" content="https://inliang.github.io/envo/og-image.png" />
+
+    <!-- 结构化数据：docs/content-plan.md §6 定稿 -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Envo 信封打印助手",
+      "alternateName": "Envo",
+      "url": "https://inliang.github.io/envo/",
+      "description": "Envo 是免费的在线信封打印助手：填写寄件人与收件人，选择 ZL/DL/C5/C4 等信封规格，实时预览排版，一键打印或导出 PDF；支持批量打印，数据只存本地，不上传服务器。",
+      "applicationCategory": "BusinessApplication",
+      "applicationSubCategory": "信封打印",
+      "operatingSystem": "Any",
+      "browserRequirements": "需要支持 HTML5 Canvas 的现代浏览器，如 Chrome、Edge、Firefox、Safari",
+      "inLanguage": "zh-CN",
+      "softwareVersion": "1.0.1",
+      "isAccessibleForFree": true,
+      "featureList": [
+        "高德地图地址联想（输入地址关键词自动提示）",
+        "信封排版实时预览",
+        "ZL 6号 (230×120mm) / DL 5号 (220×110mm) / C5 7号 (229×162mm) / C4 9号 (324×229mm) 国内信封规格",
+        "B6 (176×125mm) / C6 (162×114mm) 国际信封规格",
+        "自定义信封尺寸",
+        "浏览器直接打印，自动匹配纸张尺寸",
+        "导出 PDF",
+        "地址簿管理：标签分类、搜索、Excel / CSV / JSON 导入导出",
+        "批量打印选中的地址",
+        "打印历史记录与重新打印",
+        "数据仅保存在本地浏览器，不上传服务器"
+      ],
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "CNY",
+        "availability": "https://schema.org/InStock"
+      },
+      "screenshot": "https://inliang.github.io/envo/og-image.png"
+    }
+    </script>
   </head>
   <body class="bg-brand-50 text-brand-900 antialiased">
     <div id="root"></div>
+    <noscript>
+      <h1>Envo 信封打印助手</h1>
+      <p>Envo 是免费的在线信封打印助手：填写寄件人与收件人，选择 ZL/DL/C5/C4 等国内信封规格（另支持 B6/C6 国际规格与自定义尺寸），实时预览排版，一键打印或导出 PDF；地址簿支持批量打印，数据只存本地，不上传服务器。</p>
+      <p>本工具需要启用 JavaScript 才能使用。你也可以访问 <a href="https://github.com/Inliang/envo">Envo 项目仓库</a> 查看源码或自行部署。</p>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

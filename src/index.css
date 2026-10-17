@@ -10,6 +10,19 @@
     margin: 0;
     min-height: 100dvh;
   }
+  /* 焦点可见态全局基线（design-spec §7.1）：brand-700 实色环，5.47:1 */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-brand-700 ring-offset-2 ring-offset-white;
+  }
+  /* 减动效（design-spec D8）：只关过渡与动画，不动 transform（开关滑块等布局位移依赖它） */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -26,48 +39,89 @@
 @layer components {
   .card-bento {
     @apply bg-white rounded-2xl border border-slate-200/80 shadow-sm
+           p-4 sm:p-5
            hover:shadow-md transition-shadow duration-300;
   }
   .btn-primary {
-    @apply bg-gradient-to-br from-brand-600 to-brand-700 text-white px-5 py-2.5
-           rounded-xl font-semibold text-sm shadow-sm shadow-brand-200/50
-           hover:from-brand-700 hover:to-brand-800 hover:shadow-md
+    @apply inline-flex items-center justify-center gap-2
+           bg-gradient-to-br from-brand-700 to-brand-800 text-white
+           px-5 py-3 min-h-[44px] sm:py-2.5 sm:min-h-0
+           rounded-xl font-semibold text-[15px] sm:text-sm
+           shadow-sm shadow-brand-200/50
+           hover:from-brand-800 hover:to-brand-900 hover:shadow-md
            active:scale-[0.98] transition-all duration-200
-           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-brand-600 disabled:hover:to-brand-700;
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed
+           disabled:hover:from-brand-700 disabled:hover:to-brand-800;
   }
   .btn-cta {
-    @apply bg-gradient-to-br from-cta-500 to-cta-600 text-white px-5 py-2.5
-           rounded-xl font-semibold text-sm shadow-sm shadow-cta-200/50
-           hover:from-cta-600 hover:to-cta-700 hover:shadow-md
-           active:scale-[0.98] transition-all duration-200;
+    @apply inline-flex items-center justify-center gap-2
+           bg-gradient-to-br from-cta-700 to-cta-800 text-white
+           px-5 py-3 min-h-[44px] sm:py-2.5 sm:min-h-0
+           rounded-xl font-semibold text-[15px] sm:text-sm
+           shadow-sm shadow-cta-200/50
+           hover:from-cta-800 hover:to-cta-900 hover:shadow-md
+           active:scale-[0.98] transition-all duration-200
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cta-700 focus-visible:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .btn-outline {
-    @apply border border-slate-200 text-slate-700 px-5 py-2.5 rounded-xl
-           font-medium text-sm bg-white
-           hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900
-           active:scale-[0.98] transition-all duration-200;
+    @apply inline-flex items-center justify-center gap-2
+           border border-slate-300 bg-white text-slate-700
+           px-5 py-3 min-h-[44px] sm:py-2.5 sm:min-h-0
+           rounded-xl font-medium text-[15px] sm:text-sm
+           hover:bg-slate-50 hover:border-slate-400 hover:text-slate-900
+           active:scale-[0.98] transition-all duration-200
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2
+           bg-red-700 text-white
+           px-5 py-3 min-h-[44px] sm:py-2.5 sm:min-h-0
+           rounded-xl font-semibold text-[15px] sm:text-sm
+           hover:bg-red-800 active:scale-[0.98] transition-all duration-200
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-700 focus-visible:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .btn-ghost {
-    @apply px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500
-           hover:bg-slate-100 hover:text-slate-700 transition-colors duration-150;
+    @apply inline-flex items-center justify-center
+           px-3 py-3 min-h-[44px] sm:py-1.5 sm:min-h-0
+           rounded-lg text-[15px] sm:text-sm font-medium
+           text-slate-600 hover:bg-slate-100 hover:text-slate-900
+           transition-colors duration-150
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2;
   }
+  .btn-text-danger {
+    @apply inline-flex items-center justify-center
+           px-2 py-3 min-h-[44px] sm:py-1.5 sm:min-h-0
+           text-[15px] sm:text-xs font-medium
+           text-red-700 hover:text-red-800 hover:bg-red-50 rounded-lg
+           transition-colors duration-150
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-700 focus-visible:ring-offset-2;
+  }
+  /* 移动端 16px 输入（design-spec §3.4）：防 iOS 聚焦自动放大引发横向滚动 */
   .input-field {
-    @apply w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl
-           text-slate-800 placeholder-slate-400 text-sm
-           focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-400/60 focus:border-brand-300
-           transition-all duration-200;
+    @apply w-full px-4 py-3 min-h-[44px]
+           text-[16px] sm:text-sm sm:py-2.5 sm:min-h-0
+           bg-slate-50 border border-slate-400 rounded-xl
+           text-slate-800 placeholder-slate-500
+           transition-all duration-200
+           focus:bg-white focus:outline-none
+           focus:border-brand-700 focus:ring-2 focus:ring-brand-700 focus:ring-offset-1 focus:ring-offset-white
+           disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed;
   }
   .input-label {
-    @apply text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block;
+    @apply block mb-1.5 text-xs font-semibold text-slate-600 tracking-normal;
   }
   .section-title {
-    @apply text-sm font-bold text-slate-800 mb-4 flex items-center gap-2;
+    @apply text-sm font-bold text-slate-700 mb-4 flex items-center gap-2;
   }
   .section-dot {
     @apply w-1.5 h-4 rounded-full;
   }
   .tag {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium;
   }
   select.input-field {
     @apply appearance-none bg-no-repeat pr-9;

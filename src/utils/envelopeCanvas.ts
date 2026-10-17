@@ -1,7 +1,23 @@
 ﻿import type { EnvelopeSettings, SenderInfo, Address } from '../store/types';
-import { ENVELOPE_SIZES } from '../store/types';
+import { ENVELOPE_SIZES, CANVAS_FONT_STACK } from '../store/types';
 
 const MM_TO_PX = 3.78;
+
+/**
+ * 设置 Canvas 字体（design-spec §3.1② / D1）。
+ * 必须用独立的 Canvas 字体栈（system-ui 开头，不含 -apple-system 等非法 shorthand 族名），
+ * 并在赋值后立即读回校验：若赋值被静默忽略（ctx.font 仍是哨兵值），
+ * 信封会以 10px 默认字体渲染 —— 预览看不出、打印整批报废，这条 warn 是唯一的救命索。
+ */
+function setFont(ctx: CanvasRenderingContext2D, weight: string | number, sizePx: number): void {
+  const size = Math.max(1, Math.round(sizePx));
+  const target = `${weight} ${size}px ${CANVAS_FONT_STACK}`;
+  ctx.font = '1px sans-serif'; // 哨兵：非法赋值会保持此值不变
+  ctx.font = target;
+  if (!ctx.font.includes('system-ui')) {
+    console.warn('[envo] 信封字体设置未生效，已回退浏览器默认字体：', target);
+  }
+}
 
 function isDomestic(settings: EnvelopeSettings): boolean {
   const cfg = ENVELOPE_SIZES[settings.size];
@@ -119,7 +135,7 @@ function drawDomesticEnvelope(
   }
   if (recipient.postcode) {
     ctx.fillStyle = forPrint ? '#1F2937' : '#DC2626';
-    ctx.font = `600 ${F.postcode}px ${settings.fontFamily}`;
+    setFont(ctx, 600, F.postcode);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     const digits = recipient.postcode.replace(/\D/g, '').slice(0, 6);
@@ -136,7 +152,7 @@ function drawDomesticEnvelope(
     ctx.lineWidth = 1;
     ctx.strokeRect(stampX, stampY, stampW, stampH);
     ctx.fillStyle = '#DC2626';
-    ctx.font = `${F.stamp}px ${settings.fontFamily}`;
+    setFont(ctx, '', F.stamp);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('贴邮票处', stampX + stampW / 2, stampY + stampH / 2);
@@ -150,7 +166,7 @@ function drawDomesticEnvelope(
 
   const addrLines = recipient.address.split('\n').filter(Boolean);
   if (addrLines.length > 0) {
-    ctx.font = `${F.address}px ${settings.fontFamily}`;
+    setFont(ctx, '', F.address);
     ctx.fillStyle = '#1F2937';
     const lineSpacing = F.address * 1.5;
     addrLines.forEach((line, i) => {
@@ -165,7 +181,7 @@ function drawDomesticEnvelope(
   const fullName = displayName + (displayName ? '（收）' : '');
 
   ctx.fillStyle = '#134E4A';
-  ctx.font = `700 ${F.name}px ${settings.fontFamily}`;
+  setFont(ctx, 700, F.name);
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillText(fullName, recipX, nameY);
@@ -173,7 +189,7 @@ function drawDomesticEnvelope(
   // Phone on the same line, offset to the right of name
   if (recipient.phone && displayName) {
     const nameWidth = ctx.measureText(fullName).width;
-    ctx.font = `${F.phone}px ${settings.fontFamily}`;
+    setFont(ctx, '', F.phone);
     ctx.fillStyle = forPrint ? '#000000' : '#6B7280';
     ctx.fillText(recipient.phone, recipX + nameWidth + Math.round(w * 0.06), nameY);
   }
@@ -183,7 +199,7 @@ function drawDomesticEnvelope(
    * ═══════════════════════════════════════ */
   if (!recipient.name && !recipient.address) {
     ctx.fillStyle = '#D1D5DB';
-    ctx.font = `${F.address}px ${settings.fontFamily}`;
+    setFont(ctx, '', F.address);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('请填写收件人信息', w * 0.5, h * 0.45);
@@ -195,7 +211,7 @@ function drawDomesticEnvelope(
   if (settings.showReturnAddress && (sender.name || sender.address)) {
     ctx.textAlign = 'right';
     ctx.textBaseline = 'top';
-    ctx.font = `${F.sender}px ${settings.fontFamily}`;
+    setFont(ctx, '', F.sender);
     ctx.fillStyle = forPrint ? '#000000' : '#6B7280';
 
     const senderLines: string[] = [];
@@ -221,7 +237,7 @@ function drawDomesticEnvelope(
   }
   if (sender.postcode) {
     ctx.fillStyle = forPrint ? '#1F2937' : '#DC2626';
-    ctx.font = `600 ${F.senderPostcode}px ${settings.fontFamily}`;
+    setFont(ctx, 600, F.senderPostcode);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     const digits = sender.postcode.replace(/\D/g, '').slice(0, 6);
@@ -277,7 +293,7 @@ function drawInternationalEnvelope(
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillStyle = forPrint ? '#000000' : '#6B7280';
-    ctx.font = `${fs * 0.7}px ${settings.fontFamily}`;
+    setFont(ctx, '', fs * 0.7);
     const senderLines = [
       `From: ${sender.name}`,
       sender.address,
@@ -296,19 +312,19 @@ function drawInternationalEnvelope(
   ctx.textBaseline = 'top';
 
   ctx.fillStyle = '#134E4A';
-  ctx.font = `600 ${fs}px ${settings.fontFamily}`;
+  setFont(ctx, 600, fs);
   ctx.fillText('To:', recipX, recipY - 20);
   ctx.fillText(recipient.recipient || recipient.name, recipX, recipY);
 
   const addrLines = recipient.address.split('\n').filter(Boolean);
-  ctx.font = `${fs}px ${settings.fontFamily}`;
+  setFont(ctx, '', fs);
   ctx.fillStyle = '#1F2937';
   addrLines.forEach((line, i) => {
     ctx.fillText(line, recipX, recipY + 24 + i * (fs * 1.6));
   });
 
   if (recipient.phone) {
-    ctx.font = `${fs * 0.8}px ${settings.fontFamily}`;
+    setFont(ctx, '', fs * 0.8);
     ctx.fillStyle = forPrint ? '#000000' : '#6B7280';
     ctx.fillText(
       `Tel: ${recipient.phone}`,

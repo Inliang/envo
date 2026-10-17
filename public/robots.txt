@@ -1,0 +1,7 @@
+# https://inliang.github.io/envo/robots.txt
+# 注意：robots.txt 规范位置是主机根路径，子路径下的本文件爬虫不会读取。
+# 保留此文件用于工程规范与未来迁移到自定义域名/根路径时复用。
+User-agent: *
+Allow: /
+
+Sitemap: https://inliang.github.io/envo/sitemap.xml

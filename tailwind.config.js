@@ -32,8 +32,19 @@ export default {
           900: '#7C2D12',
         },
       },
+      // 系统字体栈（design-spec §3.1 裁决值，勿调换顺序）
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: [
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"Segoe UI"',
+          '"PingFang SC"',
+          '"Hiragino Sans GB"',
+          '"Microsoft YaHei"',
+          '"Noto Sans CJK SC"',
+          '"Source Han Sans SC"',
+          'sans-serif',
+        ],
       },
     },
   },

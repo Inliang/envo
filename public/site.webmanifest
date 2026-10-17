@@ -1,0 +1,18 @@
+{
+  "name": "Envo 信封打印助手",
+  "short_name": "Envo",
+  "description": "Envo 是免费的在线信封打印助手：填写寄件人与收件人，选择 ZL/DL/C5/C4 等信封规格，信封排版实时预览，一键打印或导出 PDF；支持批量打印，数据只存本地，不上传服务器。",
+  "lang": "zh-CN",
+  "start_url": "/envo/",
+  "scope": "/envo/",
+  "display": "standalone",
+  "background_color": "#F0FDFA",
+  "theme_color": "#0D9488",
+  "icons": [
+    { "src": "/envo/favicon-16x16.png", "sizes": "16x16", "type": "image/png" },
+    { "src": "/envo/favicon-32x32.png", "sizes": "32x32", "type": "image/png" },
+    { "src": "/envo/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "/envo/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/envo/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

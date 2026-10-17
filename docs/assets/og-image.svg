@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ============================================================================
+  Envo 信封打印助手 · 社交分享图母版 og-image.svg
+  ============================================================================
+  画布     : viewBox 0 0 1200 630，width/height = 1200 / 630（OG 标准 1.91:1）
+  安全边距 : 四周各 60px（微信 / 微博 / X 可能在边缘裁切，内容不得越界）
+  导出目标 : public/og-image.png，1200×630 PNG，< 300KB（OG 不支持 SVG）
+
+  ===========================================================================
+  图上文（终稿 · 共三行 · 逐字照抄，改动需 team-lead 确认）
+  ===========================================================================
+  ★ 定稿状态：三行终稿，v1.0.1。本结论经过两次往返后已确定，勿再增删行数。
+
+    [1] 品牌行 : Envo                    （纯路径，非 text，零字体依赖）
+    [2] 主标   : 信封打印助手            （64px / 700 / #FFFFFF）
+    [3] 副标   : 在线排版信封 · 支持 ZL/DL/C5/C4 · 一键导出 PDF
+                                        （26px / 400 / #CCFBF1）
+
+  ★ 为什么是三行、不加「隐私承诺」小字行：
+    OG 卡片在微信 / 微博 / Telegram 信息流里通常只显示为约 500px 宽的缩略图，
+    即 1200px 原图的 0.42 倍。按此换算：
+      · 主标 64px   → 缩略图约 27px，清晰可读
+      · 副标 26px   → 缩略图约 11px，勉强可读
+      · 若加 18px   → 缩略图约 7.5px，【完全不可读】
+    加一行在缩略图里根本看不见的字，还要挤占左侧文字区高度，不划算。
+    隐私承诺已锁定进 description（搜索结果里会完整显示），那里才是它真正被
+    读到的位置。【不要在图上再加第四行。】
+
+  三条硬约束：
+    1. 规格枚举固定为 ZL/DL/C5/C4，【禁止出现 C6】。
+       全站 description 已锁定为「选择 ZL/DL/C5/C4 等信封规格」；
+       C6 属国际规格（162×114mm），图上文与 TDK 打架会被判信息不一致。
+    2. 【禁止】出现「地址智能联想」「自动补全邮编」之类字样。
+       高德 v3 inputtips 官方不返回 postcode，代码里邮编字段是用 11 位
+       towncode 冒充的（R5）—— 该功能实际是坏的，对外宣传属虚假承诺。
+    3. 文字一律用中文系统字体（黑体类），【不得依赖任何外链字体】。
+
+  层级说明：主标 64px 与副标 26px 形成 2.5:1 的明确级差；两行加字标构成
+  一个左对齐的品牌锁定组合，视觉重心在主标，左侧不显拥挤。
+
+  ===========================================================================
+  ★ 字体方案决策（本文件最重要的技术决定，改前请先读完）
+  ===========================================================================
+  约束：OG 图上的文字必须用【中文系统字体】渲染，不得依赖任何外链字体。
+
+  【决定】混合方案：品牌字标走纯路径，中文标题走 <text> + 完整回退链。
+
+    ① 字标「Envo」—— 【纯路径手绘】（<g id="wordmark">，4 个拉丁字母用
+       单线几何描边绘制，stroke 而非 fill）。零字体依赖。
+       存在的意义是兜底：即使目标渲染环境一个中文字体都没有，
+       图上仍有可识别的品牌标识「Envo」，不会退化成一块纯色板。
+
+    ② 中文标题与副文案 —— 保留 <text>，font-family 写【完整的中文回退链】
+       （不是只写 sans-serif）。理由：
+       - 只写 `sans-serif` 在无中文字体的 Linux CI 上会输出豆腐块，
+         比写全链更糟；
+       - 6 个汉字手绘成贝塞尔路径不现实（数百个控制点，必然走形且不可维护），
+         也不会比系统字体渲染得更准。
+
+    ③ 所有 <text> 均【不使用 textLength】。textLength 会在字体回退时强制
+       拉伸/压缩字距，导致字符重叠。间距全部用绝对坐标控制。
+
+  【★ 导出 PNG 前必做】
+    必须在【装有中文字体的机器】上渲染，并逐字目视检查：
+      · Windows  → 微软雅黑（Microsoft YaHei）
+      · macOS    → 苹方（PingFang SC）
+      · Linux CI → 需先 apt-get install fonts-noto-cjk，否则中文变豆腐块
+    推荐渲染方式（任选其一）：
+      · Playwright / Puppeteer: page.setViewportSize(1200x630) → screenshot
+      · Chromium headless：用 screenshot 模式，窗口尺寸设为 1200×630
+      · resvg / sharp: 需确认系统已装中文字体
+    渲染后检查：6 个汉字笔画完整、无方块、无重叠。
+
+  ===========================================================================
+  ⚠️ 与 docs/content-plan.md §9.2 的分歧（已按派工硬要求执行，需主理人确认）
+  ===========================================================================
+  content-plan.md §9.2 构图规范写的是「brand-50 #F0FDFA → 纯白 #FFFFFF 浅渐变底，
+  标题用 brand-900」；本次派工硬要求是「底色用品牌 teal 系」。二者冲突。
+  本母版【按派工的 teal 实底执行】：#115E59 → #0F766E 斜向渐变 + 白字。
+  若改回浅底方案，本文件需重出一版（底色、文字色、信封卡片描边全部要改）。
+
+  ===========================================================================
+  对比度核算（白字 / 浅字 on teal 底，全部达标）
+  ===========================================================================
+    白字 #FFFFFF on #115E59 = 7.58:1   ✅（标题 64px 粗体、字标）
+    白字 #FFFFFF on #0F766E = 5.47:1   ✅
+    #CCFBF1 on #115E59      = 6.73:1   ✅（副文案 26px）
+    #CCFBF1 on #0F766E      = 4.86:1   ✅
+    信封卡片 白底 on teal    = 5.47:1   ✅（非文本，门槛 3:1）
+
+  ===========================================================================
+  已知降级
+  ===========================================================================
+    · feDropShadow（信封卡片投影）：Chrome / Firefox / Safari / resvg 均支持。
+      若渲染器不支持，卡片只是没有阴影，图形本身不受影响，可接受。
+    · 若中文字体缺失：<text> 会渲染成豆腐块，但纯路径字标「Envo」仍完整可见。
+  ============================================================================
+-->
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="1200" height="630"
+     viewBox="0 0 1200 630"
+     shape-rendering="geometricPrecision"
+     role="img" aria-labelledby="og-title og-desc">
+  <title id="og-title">信封打印助手 Envo</title>
+  <desc id="og-desc">在线排版信封 · 支持 ZL/DL/C5/C4 · 一键导出 PDF</desc>
+
+  <defs>
+    <!-- 品牌 teal 斜向渐变：左上 #115E59（brand-800）→ 右下 #0F766E（brand-700） -->
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#115E59" />
+      <stop offset="100%" stop-color="#0F766E" />
+    </linearGradient>
+
+    <!-- 左上角柔光，避免大面积实色显得死板 -->
+    <radialGradient id="glow" cx="12%" cy="8%" r="85%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.14" />
+      <stop offset="60%" stop-color="#FFFFFF" stop-opacity="0.03" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- 信封卡片投影 -->
+    <filter id="cardShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="14" stdDeviation="20"
+                    flood-color="#063F3C" flood-opacity="0.38" />
+    </filter>
+  </defs>
+
+  <!-- ================= 背景 ================= -->
+  <rect width="1200" height="630" fill="url(#bg)" />
+  <rect width="1200" height="630" fill="url(#glow)" />
+
+  <!-- ================= 左侧文案区（x 80 起） ================= -->
+
+  <!-- 主标题：信封打印助手（64px / 700 / 白色） -->
+  <text x="80" y="210"
+        font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans CJK SC','Source Han Sans SC',sans-serif"
+        font-size="64" font-weight="700" letter-spacing="4"
+        fill="#FFFFFF">信封打印助手</text>
+
+  <!-- ① 品牌字标 Envo —— ★ 纯路径手绘，零字体依赖（描边 9px，圆头圆角） -->
+  <g id="wordmark" fill="none" stroke="#FFFFFF" stroke-width="9"
+     stroke-linecap="round" stroke-linejoin="round">
+    <!-- E -->
+    <path d="M80 240 V284" />
+    <path d="M80 240 H124" />
+    <path d="M80 262 H114" />
+    <path d="M80 284 H124" />
+    <!-- n -->
+    <path d="M146 284 V260 Q146 252 156 252 H174 Q194 252 194 270 V284" />
+    <!-- v -->
+    <path d="M216 252 L232 284 L248 252" />
+    <!-- o -->
+    <circle cx="280" cy="268" r="16" />
+  </g>
+
+  <!-- 副文案（26px / 400 / #CCFBF1）
+       ★ 文案为终稿，逐字照抄，不得增删改：
+         在线排版信封 · 支持 ZL/DL/C5/C4 · 一键导出 PDF
+       ★ 规格枚举固定为 ZL/DL/C5/C4，【禁止出现 C6】—— 与全站锁定版
+         description「选择 ZL/DL/C5/C4 等信封规格」保持一致。
+       ★ 禁止出现「地址智能联想」「自动补全邮编」等字样 —— 高德 v3 inputtips
+         官方不返回 postcode，该功能实际不可用（R5），对外宣传属虚假承诺。 -->
+  <text x="80" y="348"
+        font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans CJK SC','Source Han Sans SC',sans-serif"
+        font-size="26" font-weight="400" letter-spacing="1"
+        fill="#CCFBF1">在线排版信封 · 支持 ZL/DL/C5/C4 · 一键导出 PDF</text>
+
+  <!-- ================= 右侧主视觉：信封预览卡片（旋转 -6°） =================
+       旋转后包围盒 x≈696–1114、y≈150–470，均在 60px 安全边距内；
+       副文案加长后右端约到 x=652，与卡片左缘留约 44px 间隙，不重叠。 -->
+  <g transform="rotate(-6 905 310)">
+    <!-- 卡片本体 -->
+    <rect x="710" y="170" width="390" height="280" rx="16" ry="16"
+          fill="#FFFFFF" filter="url(#cardShadow)" />
+
+    <!-- 左上角：邮编格 ×6（国内信封规范：邮编框在左上） -->
+    <g fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2">
+      <rect x="736" y="200" width="18" height="18" rx="2" ry="2" />
+      <rect x="758" y="200" width="18" height="18" rx="2" ry="2" />
+      <rect x="780" y="200" width="18" height="18" rx="2" ry="2" />
+      <rect x="802" y="200" width="18" height="18" rx="2" ry="2" />
+      <rect x="824" y="200" width="18" height="18" rx="2" ry="2" />
+      <rect x="846" y="200" width="18" height="18" rx="2" ry="2" />
+    </g>
+
+    <!-- 右上角：邮票位（cta-500 橙 + 白色齿孔描边） -->
+    <rect x="1014" y="196" width="56" height="56" rx="4" ry="4" fill="#F97316" />
+    <rect x="1022" y="204" width="40" height="40" rx="2" ry="2"
+          fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="4 3" />
+
+    <!-- 中部：收件人地址 / 收件人姓名（占位条，不写真实姓名） -->
+    <rect x="736" y="256" width="300" height="14" rx="7" ry="7" fill="#CBD5E1" />
+    <rect x="736" y="286" width="180" height="14" rx="7" ry="7" fill="#CBD5E1" />
+    <rect x="736" y="316" width="330" height="10" rx="5" ry="5" fill="#E2E8F0" />
+    <rect x="736" y="338" width="250" height="10" rx="5" ry="5" fill="#E2E8F0" />
+
+    <!-- 右下角：寄件人地址（占位条） -->
+    <rect x="880" y="400" width="190" height="10" rx="5" ry="5" fill="#E2E8F0" />
+    <rect x="910" y="420" width="160" height="10" rx="5" ry="5" fill="#E2E8F0" />
+  </g>
+</svg>
