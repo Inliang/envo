@@ -1,22 +1,3 @@
----
-AIGC:
-    Label: "1"
-    ContentProducer: 001191440300708461136T1XGW3
-    ProduceID: 4d32f127e120f5be24dadce57b263d70_9edaef8f782611f1b3d35254007bceed
-    ReservedCode1: b5/M5e4M6goyxoPu87cVUXQCb6WiYiDfgZdPCNSFucOA+q2n/b0JxOzdEnAPPll90DZedHqtM62b9ck/42A66u3txFg3hLsZWihf2lER8d990roWkUjIFx7pDOXb1gWnDKRErLrrt84NdspDJ6CQCYnHmXUt6vc+bLoJ5La9O6sUr6sCFiYdzUmc7HY=
-    ContentPropagator: 001191440300708461136T1XGW3
-    PropagateID: 4d32f127e120f5be24dadce57b263d70_9edaef8f782611f1b3d35254007bceed
-    ReservedCode2: b5/M5e4M6goyxoPu87cVUXQCb6WiYiDfgZdPCNSFucOA+q2n/b0JxOzdEnAPPll90DZedHqtM62b9ck/42A66u3txFg3hLsZWihf2lER8d990roWkUjIFx7pDOXb1gWnDKRErLrrt84NdspDJ6CQCYnHmXUt6vc+bLoJ5La9O6sUr6sCFiYdzUmc7HY=
----
-
-
-
-
-
-
-
-
-
 # Changelog
 
 ## 2026-10-17 · v1.0.1
