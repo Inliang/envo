@@ -24,6 +24,11 @@ export type EnvelopeSize = 'DL' | 'ZL' | 'C5' | 'C4' | 'C6' | 'B6' | 'custom';
 
 export interface EnvelopeSettings {
   size: EnvelopeSize;
+  /**
+   * 书写格式（B11：与尺寸解耦）。任意尺寸都能套国内格式或国际格式。
+   * 必须保持可选：老数据没有这个字段，缺失时回退「按尺寸 category 判断」，零迁移风险。
+   */
+  format?: 'domestic' | 'international';
   customWidth?: number;
   customHeight?: number;
   fontSize: number;

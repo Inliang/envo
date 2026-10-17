@@ -43,6 +43,12 @@ export default function EnvelopeEditor() {
   const sizeConfig = ENVELOPE_SIZES[currentEnvelope.size];
   const hasAmapKey = Boolean(settings.amapKey);
 
+  // B11：书写格式与尺寸解耦。未显式设置（老数据）或值非法时回退到尺寸 category，行为与改动前一致
+  const activeFormat: 'domestic' | 'international' =
+    currentEnvelope.format === 'domestic' || currentEnvelope.format === 'international'
+      ? currentEnvelope.format
+      : sizeConfig.category === 'domestic' ? 'domestic' : 'international';
+
   // Draw canvas on changes
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -433,7 +439,14 @@ export default function EnvelopeEditor() {
                 id="env-size"
                 className="input-field"
                 value={currentEnvelope.size}
-                onChange={(e) => setCurrentEnvelope({ size: e.target.value as EnvelopeSettings['size'] })}
+                onChange={(e) => {
+                  const nextSize = e.target.value as EnvelopeSettings['size'];
+                  // 决策①：切换尺寸时书写格式自动跟随（custom 归国际，维持现状），用户随后仍可手动改
+                  setCurrentEnvelope({
+                    size: nextSize,
+                    format: ENVELOPE_SIZES[nextSize]?.category === 'domestic' ? 'domestic' : 'international',
+                  });
+                }}
               >
                 <optgroup label="国内信封">
                   {Object.entries(ENVELOPE_SIZES)
@@ -478,6 +491,57 @@ export default function EnvelopeEditor() {
                 </div>
               </div>
             )}
+            {/* B11：书写格式独立成区。任意尺寸都能套国内 / 国际两种格式 */}
+            <div>
+              <span id="env-format-label" className="input-label">书写格式</span>
+              <div
+                role="radiogroup"
+                aria-labelledby="env-format-label"
+                className="flex flex-wrap gap-1 bg-brand-50 rounded-xl p-1"
+              >
+                {([
+                  { value: 'domestic', label: '国内信封格式' },
+                  { value: 'international', label: '国际信封格式' },
+                ] as const).map((opt, i, arr) => {
+                  const checked = activeFormat === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      id={`env-format-${opt.value}`}
+                      type="button"
+                      role="radio"
+                      aria-checked={checked}
+                      tabIndex={checked ? 0 : -1}
+                      onClick={() => setCurrentEnvelope({ format: opt.value })}
+                      onKeyDown={(e) => {
+                        // radiogroup 键盘约定：左右 / 上下键在选项间移动并选中
+                        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                          e.preventDefault();
+                          const next = arr[(i + 1) % arr.length];
+                          setCurrentEnvelope({ format: next.value });
+                          document.getElementById(`env-format-${next.value}`)?.focus();
+                        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                          e.preventDefault();
+                          const prev = arr[(i - 1 + arr.length) % arr.length];
+                          setCurrentEnvelope({ format: prev.value });
+                          document.getElementById(`env-format-${prev.value}`)?.focus();
+                        }
+                      }}
+                      className={`flex-1 min-w-[120px] px-3.5 py-2 min-h-[44px] sm:min-h-0 rounded-lg text-[13px] sm:text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2 ${
+                        checked
+                          ? 'bg-white text-brand-800 shadow-sm'
+                          : 'text-brand-700 hover:text-brand-800 hover:bg-white/60'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-1.5 text-[13px] leading-6 text-slate-500">
+                每个尺寸都能选国内或国际书写格式；切换尺寸时会自动跟随，之后也可以随时手动改。
+              </p>
+            </div>
             <div className="flex items-center justify-between min-h-[44px] sm:min-h-0 sm:py-1">
               <span id="return-addr-label" className="text-sm text-slate-700 font-medium">显示寄件人地址</span>
               <button
