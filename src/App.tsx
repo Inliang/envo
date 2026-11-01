@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { useStore } from './store';
 import EnvelopeEditor from './components/EnvelopeEditor';
 import AddressBook from './components/AddressBook';
 import PrintHistory from './components/PrintHistory';
 import Settings from './components/Settings';
-import { Envelope, BookUser, Printer, Settings as SettingsIcon, Send } from './components/icons';
+import { Envelope, BookUser, Printer, Settings as SettingsIcon, Send, Sun, Moon } from './components/icons';
+import { getTheme, setTheme, type Theme } from './theme';
 import type { TabKey } from './store/types';
 
 const TABS: { key: TabKey; label: string; shortLabel: string; Icon: typeof Envelope }[] = [
@@ -15,44 +17,57 @@ const TABS: { key: TabKey; label: string; shortLabel: string; Icon: typeof Envel
 
 export default function App() {
   const { activeTab, setActiveTab } = useStore();
+  const [theme, setThemeState] = useState<Theme>(getTheme());
+  const toggleTheme = () => {
+    const next: Theme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    setThemeState(next);
+  };
 
   return (
     <div className="min-h-[100dvh] flex flex-col">
       {/* Header */}
-      <header className="bg-[var(--background)] border-b border-[var(--border)] px-4 sm:px-6 py-3 sm:py-4">
+      <header className="app-header px-4 sm:px-6 py-3 sm:py-4">
         <div className="max-w-7xl mx-auto flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <Send className="w-6 h-6 text-[var(--accent-foreground)] shrink-0" aria-hidden="true" />
+            <span className="brand-logo" aria-hidden="true">
+              <Send className="w-[22px] h-[22px]" />
+            </span>
             <div>
               <h1 className="text-lg font-semibold text-[var(--foreground)] leading-tight">Envo</h1>
               <p className="text-xs text-[var(--muted-foreground)]">在线排版信封，一键打印或导出 PDF</p>
             </div>
           </div>
-          <nav aria-label="主导航" className="grid grid-cols-4 gap-0.5 bg-[var(--popover)] border border-[var(--border)] rounded-xl p-1 sm:flex sm:gap-1 sm:w-auto">
-            {TABS.map((tab) => {
-              const active = activeTab === tab.key;
-              return (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
-                  aria-current={active ? 'page' : undefined}
-                  className={`flex flex-col items-center justify-center gap-0.5
-                             px-1 py-2 min-h-[48px] rounded-lg text-[11px] leading-tight font-medium
-                             transition-all duration-150
-                             sm:flex-row sm:min-h-0 sm:px-4 sm:py-2 sm:text-sm sm:gap-0
-                             ${
-                    active
-                      ? 'bg-[var(--primary-tint)] text-[var(--accent-foreground)]'
-                      : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)]'
-                  }`}
-                >
-                  <tab.Icon className="w-5 h-5 sm:w-4 sm:h-4 sm:mr-1.5" aria-hidden="true" />
-                  <span className="sm:hidden">{tab.shortLabel}</span>
-                  <span className="hidden sm:inline">{tab.label}</span>
-                </button>
-              );
-            })}
-          </nav>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <nav aria-label="主导航" className="app-nav">
+              {TABS.map((tab) => {
+                const active = activeTab === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    aria-current={active ? 'page' : undefined}
+                    className="flex flex-col items-center justify-center gap-0.5
+                               px-1 py-2 min-h-[48px] rounded-lg text-[11px] leading-tight font-medium
+                               sm:flex-row sm:min-h-0 sm:px-4 sm:py-2 sm:text-sm sm:gap-1.5"
+                  >
+                    <tab.Icon className="w-5 h-5 sm:w-4 sm:h-4" aria-hidden="true" />
+                    <span className="sm:hidden">{tab.shortLabel}</span>
+                    <span className="hidden sm:inline">{tab.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={theme === 'dark' ? '切换到浅色主题' : '切换到深色主题'}
+              title={theme === 'dark' ? '切换到浅色主题' : '切换到深色主题'}
+              className="theme-toggle"
+            >
+              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
       </header>
 

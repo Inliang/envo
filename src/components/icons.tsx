@@ -197,3 +197,28 @@ export function Send({ className, ...props }: IconProps) {
     </Icon>
   );
 }
+
+/* 主题切换：日 / 月（页头一键切换用），沿用 Icon 基类风格 */
+export function Sun({ className, ...props }: IconProps) {
+  return (
+    <Icon className={className} {...props}>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2" />
+      <path d="M12 20v2" />
+      <path d="m4.93 4.93 1.41 1.41" />
+      <path d="m17.66 17.66 1.41 1.41" />
+      <path d="M2 12h2" />
+      <path d="M20 12h2" />
+      <path d="m6.34 17.66-1.41 1.41" />
+      <path d="m19.07 4.93-1.41 1.41" />
+    </Icon>
+  );
+}
+
+export function Moon({ className, ...props }: IconProps) {
+  return (
+    <Icon className={className} {...props}>
+      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z" />
+    </Icon>
+  );
+}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useStore } from '../store';
 import { exportAddressesToExcel, exportHistoryToExcel } from '../utils/exportExcel';
 import { Eye, EyeOff } from './icons';
+import { getTheme, setTheme, type Theme } from '../theme';
 
 export default function Settings() {
   const { settings, addresses, printHistory, updateSettings, setAmapKey, getAmapKey } = useStore();
@@ -9,16 +10,11 @@ export default function Settings() {
   const [keyShown, setKeyShown] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  // 主题：首次挂载读取当前 .dark 状态（与 index.html 防闪烁脚本保持一致），避免 hydration 闪烁
-  const [theme, setTheme] = useState<'dark' | 'light'>(() =>
-    typeof document !== 'undefined' && document.documentElement.classList.contains('dark') ? 'dark' : 'light'
-  );
-  const switchTheme = (next: 'dark' | 'light') => {
-    document.documentElement.classList.toggle('dark', next === 'dark');
-    try {
-      localStorage.setItem('envo-theme', next);
-    } catch {}
+  // 主题：经 theme.ts 接入，与页头切换共用同一套逻辑与持久化（envo-theme）
+  const [theme, setThemeState] = useState<Theme>(getTheme());
+  const switchTheme = (next: Theme) => {
     setTheme(next);
+    setThemeState(next);
   };
 
   useEffect(() => {

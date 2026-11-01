@@ -5,18 +5,19 @@
 @layer base {
   :root {
     color-scheme: light;
-    --background: #FFFFFF;
-    --foreground: #0F172A;
+    /* 方向 B：暖白编辑感（Warm Editorial Light）—— 暖白底非纯白，白卡片浮于其上 */
+    --background: #F7F6F3;
+    --foreground: #1B1F24;
     --card: #FFFFFF;
-    --card-foreground: #0F172A;
-    --muted: #F8FAFC;
-    --muted-foreground: #64748B;
+    --card-foreground: #1B1F24;
+    --muted: #F1F0EC;
+    --muted-foreground: #6B7280;
     --popover: #FFFFFF;
-    --border: #E2E8F0;
-    --input: #94A3B8;
+    --border: #ECEAE4;
+    --input: #DAD8D2;
     --primary: #0F766E;
     --primary-foreground: #FFFFFF;
-    --secondary: #F1F5F9;
+    --secondary: #F1F0EC;
     --secondary-foreground: #334155;
     --accent-foreground: #0F766E;
     --ring: #0F766E;
@@ -35,28 +36,29 @@
     --info-bg: rgba(17, 94, 89, 0.10);
     --info-border: rgba(17, 94, 89, 0.28);
     /* 衍生令牌：控件态专用（绕过 Tailwind 对 var() 透明度修饰符 /xx 的不支持） */
-    --primary-tint: rgba(15, 118, 110, 0.15); /* 选中/激活底色（两套一致为 brand-700 15%） */
-    --accent-ring: rgba(15, 118, 110, 0.40);  /* 收件人卡片强调环（浅色 brand-700 40%） */
-    --placeholder: #64748B;                    /* 浅色占位符（对白底 4.76:1） */
+    --primary-tint: rgba(15, 118, 110, 0.12); /* 选中/激活底色（浅色 brand-700 12%） */
+    --accent-ring: rgba(15, 118, 110, 0.35);  /* 收件人卡片 / 焦点强调环（浅色 brand-700 35%） */
+    --placeholder: #6B7280;                    /* 浅色占位符（对白底 4.6:1） */
   }
 
   .dark {
     color-scheme: dark;
-    --background: #0A0A0B;
-    --foreground: #EDEDED;
-    --card: #121214;
-    --card-foreground: #EDEDED;
-    --muted: #18181B;
-    --muted-foreground: #A1A1AA;
-    --popover: #161618;
-    --border: #27272A;
-    --input: #6B7280;
+    /* 方向 A：深色质感玻璃（Deep Premium Dark）—— 近黑底 + 半透明玻璃卡片 */
+    --background: #07090C;
+    --foreground: #ECECEC;
+    --card: rgba(255, 255, 255, 0.035);        /* 毛玻璃卡片底（叠在辉光底上） */
+    --card-foreground: #ECECEC;
+    --muted: rgba(255, 255, 255, 0.05);
+    --muted-foreground: #9A9AA6;
+    --popover: rgba(255, 255, 255, 0.06);
+    --border: rgba(255, 255, 255, 0.09);
+    --input: rgba(255, 255, 255, 0.14);
     --primary: #0F766E;
-    --primary-foreground: #FFFFFF;
-    --secondary: #1F1F23;
-    --secondary-foreground: #EDEDED;
+    --primary-foreground: #06231F;             /* 深底亮 teal 渐变按钮上的深字 */
+    --secondary: rgba(255, 255, 255, 0.07);
+    --secondary-foreground: #ECECEC;
     --accent-foreground: #2DD4BF;
-    --ring: #0F766E;
+    --ring: #2DD4BF;                            /* 深色彩亮 teal 焦点环（3.42:1 ≥3:1） */
     --destructive: #B91C1C;
     --destructive-foreground: #FFFFFF;
     --success-fg: #34D399;
@@ -71,9 +73,9 @@
     --info-fg: #2DD4BF;
     --info-bg: rgba(45, 212, 191, 0.12);
     --info-border: rgba(45, 212, 191, 0.30);
-    --primary-tint: rgba(15, 118, 110, 0.15);
-    --accent-ring: rgba(45, 212, 191, 0.40); /* 深色彩亮 teal 40% */
-    --placeholder: #8A8A94;                   /* 深色占位符（对 #161618 5.29:1） */
+    --primary-tint: rgba(45, 212, 191, 0.14);  /* 深色彩亮 teal 14% */
+    --accent-ring: rgba(45, 212, 191, 0.35);   /* 深色彩亮 teal 35% */
+    --placeholder: #8A8A94;                    /* 深色占位符（对玻璃底 ≥5:1） */
   }
 
   * {
@@ -83,8 +85,22 @@
   body {
     margin: 0;
     min-height: 100dvh;
-    background-color: var(--background);
     color: var(--foreground);
+    background-color: var(--background);
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+
+  /* 双色辉光背景（design-spec §1 视觉基调）：
+     浅色 = 右上角 teal 柔光；深色 = 左上 teal + 右上蓝 双色辉光，叠在近黑底上。
+     用 background-image 叠在 background-color 之上，transparent 收尾不污染底色。 */
+  :root body {
+    background-image: radial-gradient(900px 500px at 100% -10%, rgba(45, 212, 191, 0.10), transparent 55%);
+  }
+  .dark body {
+    background-image:
+      radial-gradient(900px 500px at 12% -5%, rgba(45, 212, 191, 0.16), transparent 60%),
+      radial-gradient(700px 500px at 95% 0%, rgba(56, 131, 255, 0.12), transparent 55%);
   }
 
   /* 焦点可见态全局基线（design-spec §8）：--ring 两套一致（深 3.42 / 浅 5.47，均 ≥3:1），offset 用背景色 */
@@ -120,25 +136,48 @@
 
 @layer components {
   .card-bento {
-    @apply bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 sm:p-5 hover:border-[#3F3F46] transition-colors duration-200;
+    @apply bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 sm:p-5 transition-colors duration-200;
+    /* 浅色：白卡片 + 柔和长投影浮于暖白底（方向 B 编辑感） */
+    box-shadow: 0 14px 40px rgba(20, 30, 40, 0.07);
+  }
+  .dark .card-bento {
+    /* 深色：毛玻璃 + 大柔投影（方向 A 质感玻璃），hover 用 teal 强调环 */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  }
+  .card-bento:hover {
+    border-color: var(--accent-ring);
   }
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2
-           bg-[var(--primary)] text-[var(--primary-foreground)]
            px-5 py-3 min-h-[44px] sm:py-2.5 sm:min-h-0
            rounded-lg font-semibold text-[15px] sm:text-sm
-           hover:bg-[#115E59]
            active:scale-[0.98] transition-all duration-200
            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]
            disabled:opacity-50 disabled:cursor-not-allowed;
+    color: var(--primary-foreground);
+    border: 0;
+  }
+  /* 浅色主按钮：teal 渐变 + 白字 + 柔投影（方向 B） */
+  .btn-primary {
+    background-image: linear-gradient(135deg, #14B8A6, #0F766E);
+    box-shadow: 0 10px 24px rgba(15, 118, 110, 0.22);
+  }
+  .btn-primary:hover { filter: brightness(1.05); }
+  /* 深色主按钮：亮 teal 渐变 + 深字 + 光晕（方向 A） */
+  .dark .btn-primary {
+    background-image: linear-gradient(135deg, #3EEAD8, #0EA5A0);
+    color: #06231F;
+    box-shadow: 0 10px 26px rgba(45, 212, 191, 0.32);
   }
   /* 橙色 cta 已退役：强动作统一走 btn-primary（teal 主按钮）或 btn-outline（描边次级） */
   .btn-outline {
     @apply inline-flex items-center justify-center gap-2
-           border border-[#3F3F46] bg-transparent text-[var(--foreground)]
+           border border-[var(--border)] bg-transparent text-[var(--foreground)]
            px-5 py-3 min-h-[44px] sm:py-2.5 sm:min-h-0
            rounded-lg font-medium text-[15px] sm:text-sm
-           hover:bg-[var(--secondary)] hover:border-[#52525B]
+           hover:bg-[var(--secondary)] hover:border-[var(--accent-ring)]
            active:scale-[0.98] transition-all duration-200
            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]
            disabled:opacity-50 disabled:cursor-not-allowed;
@@ -221,7 +260,7 @@
   .tag-home { color: #065F46; background-color: #ECFDF5; border: 1px solid #A7F3D0; }
   .tag-work { color: #1E40AF; background-color: #DBEAFE; border: 1px solid #93C5FD; }
   .tag-family { color: #6B21A8; background-color: #FAF5FF; border: 1px solid #D8B4FE; }
-  .tag-other { color: #334155; background-color: #F1F5F9; border: 1px solid #CBD5E1; }
+  .tag-other { color: #475569; background-color: #F1F0EC; border: 1px solid #ECEAE4; }
   .tag-print { color: #115E59; background-color: #F0FDFA; border: 1px solid #99F6E4; }
   .tag-pdf { color: #6B21A8; background-color: #FAF5FF; border: 1px solid #D8B4FE; }
   .dark .tag-home { color: #34D399; background-color: rgba(52, 211, 153, 0.12); border-color: rgba(52, 211, 153, 0.30); }
@@ -230,4 +269,119 @@
   .dark .tag-other { color: #A1A1AA; background-color: rgba(161, 161, 170, 0.12); border-color: rgba(161, 161, 170, 0.30); }
   .dark .tag-print { color: #2DD4BF; background-color: rgba(45, 212, 191, 0.12); border-color: rgba(45, 212, 191, 0.30); }
   .dark .tag-pdf { color: #C084FC; background-color: rgba(192, 132, 252, 0.12); border-color: rgba(192, 132, 252, 0.30); }
+
+  /* ============ 页头 / 导航 / 主题切换 / 信封舞台（双主题精致换肤） ============ */
+  /* 玻璃态吸顶页头：半透明 + 毛玻璃，浮在辉光底上不抢戏 */
+  .app-header {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background-color: rgba(247, 246, 243, 0.78);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
+  }
+  .dark .app-header {
+    background-color: rgba(7, 9, 12, 0.72);
+  }
+
+  /* logo 渐变方块（纸飞机 monogram 容器），白图标浮在 teal 渐变上 */
+  .brand-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    color: #FFFFFF;
+    background-image: linear-gradient(135deg, #2DD4BF, #0EA5A0);
+    box-shadow: 0 8px 20px rgba(15, 118, 110, 0.30);
+  }
+  .brand-logo svg { width: 22px; height: 22px; }
+
+  /* 导航胶囊容器（替代原 grid 控件的底色/边框），内部按钮颜色由下方规则接管 */
+  .app-nav {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.125rem;
+    padding: 5px;
+    border-radius: 14px;
+    background-color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  @media (min-width: 640px) {
+    .app-nav { display: flex; gap: 0.25rem; width: auto; }
+  }
+  .app-nav button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 0;
+    background: transparent;
+    color: var(--muted-foreground);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+  }
+  .app-nav button:hover {
+    color: var(--foreground);
+    background-color: var(--secondary);
+  }
+  /* 激活态：浅色白底 teal 字 + 微投影；深色 teal 玻璃 + 内描边 */
+  .app-nav button[aria-current="page"] {
+    color: var(--accent-foreground);
+    background-color: #FFFFFF;
+    box-shadow: 0 2px 8px rgba(20, 30, 40, 0.08);
+  }
+  .dark .app-nav button[aria-current="page"] {
+    color: #7FF3E4;
+    background-color: rgba(45, 212, 191, 0.14);
+    box-shadow: inset 0 0 0 1px rgba(45, 212, 191, 0.35);
+  }
+
+  /* 页头主题一键切换按钮（Sun/Moon） */
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border-radius: 11px;
+    border: 1px solid var(--border);
+    background-color: var(--popover);
+    color: var(--foreground);
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s, transform 0.2s;
+  }
+  .theme-toggle:hover {
+    background-color: var(--secondary);
+    border-color: var(--accent-ring);
+  }
+  .theme-toggle:active { transform: scale(0.96); }
+  .theme-toggle:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--ring), 0 0 0 4px var(--background);
+  }
+  .theme-toggle svg { width: 20px; height: 20px; }
+
+  /* 信封预览舞台：径向聚光把白信封"托"出来（替代原 popover 平铺底色） */
+  .env-stage {
+    display: flex;
+    justify-content: center;
+    padding: 0.5rem;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    background-color: #F1F0EC;
+    background-image: radial-gradient(420px 320px at 50% 25%, rgba(15, 118, 110, 0.08), transparent 70%);
+  }
+  @media (min-width: 640px) {
+    .env-stage { padding: 1.25rem; }
+  }
+  .dark .env-stage {
+    background-color: rgba(255, 255, 255, 0.03);
+    background-image: radial-gradient(420px 320px at 50% 30%, rgba(45, 212, 191, 0.10), transparent 70%);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
 }

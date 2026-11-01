@@ -660,12 +660,12 @@ export default function EnvelopeEditor() {
               {sizeConfig.width} × {sizeConfig.height} mm
             </span>
           </div>
-          <div className="flex justify-center bg-[var(--popover)] rounded-xl p-2 sm:p-5 border border-[var(--border)] overflow-hidden">
+          <div className="env-stage overflow-hidden">
             <canvas
               ref={canvasRef}
               role="img"
               aria-label={`信封排版预览，${sizeConfig.label}，收件人 ${recipient.name || '未填写'}，地址 ${recipient.address || '未填写'}`}
-              className="block max-w-full w-auto h-auto max-h-[45vh] sm:max-h-[540px] bg-white rounded-md border border-[#3F3F46]"
+              className="block max-w-full w-auto h-auto max-h-[45vh] sm:max-h-[540px] bg-white rounded-md border border-[var(--input)]"
             />
             <p className="sr-only">
               你的浏览器不支持 Canvas，无法预览信封排版，可以改用导出 PDF 查看效果。
