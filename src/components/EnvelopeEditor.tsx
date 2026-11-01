@@ -182,13 +182,31 @@ export default function EnvelopeEditor() {
           <style>
             @page { size: ${mmW}mm ${mmH}mm; margin: 0; }
             * { margin: 0; padding: 0; }
-            html, body { width: 100%; height: 100%; }
-            img { width: 100%; display: block; }
+            /* B14：html/body 用精确 mm 而非 100%，并 overflow:hidden 兜住亚像素溢出，
+               否则图片高度换算成 mm 后比纸高多出零点几毫米，Chrome 会排出第 2 张空白纸 */
+            html, body {
+              width: ${mmW}mm;
+              height: ${mmH}mm;
+              overflow: hidden;
+              /* 信封红框 / 邮编格是彩色元素，不锁 exact 会被浏览器丢弃背景色 */
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            /* B14：img 显式给精确 mm 宽高，不再依赖 6× Canvas 的固有比例换算 */
+            img {
+              width: ${mmW}mm;
+              height: ${mmH}mm;
+              display: block;
+              break-inside: avoid;
+              page-break-after: avoid;
+            }
           </style>
         </head>
         <body>
           <img id="print-img" src="${imgData}" alt="${altText}" />
           <script>
+            // B15：打印对话框关闭后（打印或取消都会触发）自动关闭预览窗口
+            window.onafterprint = function() { window.close(); };
             document.getElementById('print-img').onload = function() {
               setTimeout(function() { window.print(); }, 200);
             };
@@ -199,7 +217,7 @@ export default function EnvelopeEditor() {
       pw.document.close();
 
       addPrintRecord({ recipient, sender, settings: currentEnvelope, type: 'print' });
-      setMsg({ text: '已在新窗口打开打印预览，打印完成后关闭该窗口即可', type: 'ok' });
+      setMsg({ text: '打印预览已打开，打印完成后窗口将自动关闭', type: 'ok' });
     } finally {
       setPrintMode('none');
     }
