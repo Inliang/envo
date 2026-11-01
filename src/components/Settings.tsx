@@ -1,12 +1,25 @@
 import { useState, useEffect } from 'react';
 import { useStore } from '../store';
 import { exportAddressesToExcel, exportHistoryToExcel } from '../utils/exportExcel';
+import { Eye, EyeOff } from './icons';
 
 export default function Settings() {
   const { settings, addresses, printHistory, updateSettings, setAmapKey, getAmapKey } = useStore();
   const [amapKeyInput, setAmapKeyInput] = useState('');
   const [keyShown, setKeyShown] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  // 主题：首次挂载读取当前 .dark 状态（与 index.html 防闪烁脚本保持一致），避免 hydration 闪烁
+  const [theme, setTheme] = useState<'dark' | 'light'>(() =>
+    typeof document !== 'undefined' && document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+  );
+  const switchTheme = (next: 'dark' | 'light') => {
+    document.documentElement.classList.toggle('dark', next === 'dark');
+    try {
+      localStorage.setItem('envo-theme', next);
+    } catch {}
+    setTheme(next);
+  };
 
   useEffect(() => {
     const key = getAmapKey();
@@ -21,10 +34,44 @@ export default function Settings() {
 
   return (
     <div className="max-w-2xl space-y-5">
+      {/* 外观 / 主题 */}
+      <div className="card-bento p-5">
+        <h2 className="text-sm font-semibold text-[var(--foreground)] mb-4 flex items-center gap-2">
+          <span className="w-1.5 h-4 bg-[var(--primary)] rounded-full" />
+          外观
+        </h2>
+        <p className="text-xs text-[var(--muted-foreground)] mb-3">选择界面主题，设置会保存在这台设备上，下次打开沿用。</p>
+        <div
+          role="radiogroup"
+          aria-label="界面主题"
+          className="inline-flex gap-1 bg-[var(--muted)] rounded-lg p-1"
+        >
+          {(['dark', 'light'] as const).map((t) => {
+            const selected = theme === t;
+            return (
+              <button
+                key={t}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                onClick={() => switchTheme(t)}
+                className={`px-4 py-2 min-h-[44px] sm:min-h-0 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)] ${
+                  selected
+                    ? 'bg-[var(--primary-tint)] text-[var(--accent-foreground)]'
+                    : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)]'
+                }`}
+              >
+                {t === 'dark' ? '深色' : '浅色'}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Default Sender */}
       <div className="card-bento p-5">
-        <h2 className="text-sm font-semibold text-brand-700 mb-4 flex items-center gap-2">
-          <span className="w-1.5 h-4 bg-brand-500 rounded-full" />
+        <h2 className="text-sm font-semibold text-[var(--foreground)] mb-4 flex items-center gap-2">
+          <span className="w-1.5 h-4 bg-[var(--primary)] rounded-full" />
           默认寄件人
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -73,24 +120,24 @@ export default function Settings() {
 
       {/* AMap API Key */}
       <div className="card-bento p-5">
-        <h2 className="text-sm font-semibold text-brand-700 mb-4 flex items-center gap-2">
-          <span className="w-1.5 h-4 bg-cta-500 rounded-full" />
+        <h2 className="text-sm font-semibold text-[var(--foreground)] mb-4 flex items-center gap-2">
+          <span className="w-1.5 h-4 bg-[var(--primary)] rounded-full" />
           高德地图 API Key
         </h2>
         {/* R7：不谎报安全等级 —— SECRET 硬编码在前端，加密只是防明文裸奔 */}
-        <div className="text-slate-600 mb-3 space-y-1.5">
+        <div className="text-[var(--muted-foreground)] mb-3 space-y-1.5">
           <p className="text-xs leading-5">
             用于地址智能联想，输入地址关键词时自动提示候选地址。Key 只存在这台设备的浏览器里，不会上传服务器，存一次下次打开就不用重填。
             <a
               href="https://lbs.amap.com/api/webservice/create-project-and-key"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-brand-700 hover:text-brand-800 ml-1 underline underline-offset-2"
+              className="text-[var(--accent-foreground)] hover:opacity-80 ml-1 underline underline-offset-2"
             >
               去申请 Key
             </a>
           </p>
-          <p className="text-xs leading-5 text-slate-500">
+          <p className="text-xs leading-5 text-[var(--muted-foreground)]">
             注意：这只是本地保存，不是加密保险箱。请勿填写高价值 Key，建议在高德控制台设置每日调用上限。
           </p>
         </div>
@@ -110,9 +157,9 @@ export default function Settings() {
               onClick={() => setKeyShown(!keyShown)}
               aria-pressed={keyShown}
               aria-label={keyShown ? '隐藏高德 Key' : '显示高德 Key'}
-              className="absolute right-2 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 sm:py-1.5 px-1 text-xs text-brand-700 hover:text-brand-800"
+              className="absolute right-2 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 sm:py-1.5 px-1 text-[var(--accent-foreground)] hover:opacity-80"
             >
-              {keyShown ? '隐藏' : '显示'}
+              {keyShown ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
           <button onClick={handleSaveKey} className="btn-primary whitespace-nowrap">
@@ -120,21 +167,21 @@ export default function Settings() {
           </button>
         </div>
         {saved && (
-          <p className="text-xs text-emerald-800 mt-2" role="status" aria-live="polite">Key 已保存到本机</p>
+          <p className="text-xs text-[var(--success-fg)] mt-2" role="status" aria-live="polite">Key 已保存到本机</p>
         )}
       </div>
 
       {/* Data Management */}
       <div className="card-bento p-5">
-        <h2 className="text-sm font-semibold text-brand-700 mb-4 flex items-center gap-2">
-          <span className="w-1.5 h-4 bg-brand-500 rounded-full" />
+        <h2 className="text-sm font-semibold text-[var(--foreground)] mb-4 flex items-center gap-2">
+          <span className="w-1.5 h-4 bg-[var(--primary)] rounded-full" />
           数据管理
         </h2>
         <div className="space-y-3">
           <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between py-2">
             <div>
-              <p className="text-sm text-slate-700">导出地址簿</p>
-              <p className="text-xs text-slate-500">导出为 Excel (.xlsx) 文件</p>
+              <p className="text-sm text-[var(--foreground)]">导出地址簿</p>
+              <p className="text-xs text-[var(--muted-foreground)]">导出为 Excel (.xlsx) 文件</p>
             </div>
             <button
               onClick={() => exportAddressesToExcel(addresses)}
@@ -144,10 +191,10 @@ export default function Settings() {
               导出 Excel
             </button>
           </div>
-          <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between py-2 border-t border-brand-50">
+          <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between py-2 border-t border-[var(--border)]">
             <div>
-              <p className="text-sm text-slate-700">导出打印历史</p>
-              <p className="text-xs text-slate-500">导出为 Excel (.xlsx) 文件</p>
+              <p className="text-sm text-[var(--foreground)]">导出打印历史</p>
+              <p className="text-xs text-[var(--muted-foreground)]">导出为 Excel (.xlsx) 文件</p>
             </div>
             <button
               onClick={() => exportHistoryToExcel(printHistory)}
@@ -157,10 +204,10 @@ export default function Settings() {
               导出 Excel
             </button>
           </div>
-          <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between py-2 border-t border-brand-50">
+          <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between py-2 border-t border-[var(--border)]">
             <div>
-              <p className="text-sm text-slate-700">导出所有数据</p>
-              <p className="text-xs text-slate-500">导出全部数据为 JSON 备份文件</p>
+              <p className="text-sm text-[var(--foreground)]">导出所有数据</p>
+              <p className="text-xs text-[var(--muted-foreground)]">导出全部数据为 JSON 备份文件</p>
             </div>
             <button
               onClick={() => {
@@ -182,10 +229,10 @@ export default function Settings() {
               导出 JSON
             </button>
           </div>
-          <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between py-2 border-t border-brand-50">
+          <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between py-2 border-t border-[var(--border)]">
             <div>
-              <p className="text-sm text-slate-700">导入数据备份</p>
-              <p className="text-xs text-slate-500">从 JSON 备份文件恢复数据</p>
+              <p className="text-sm text-[var(--foreground)]">导入数据备份</p>
+              <p className="text-xs text-[var(--muted-foreground)]">从 JSON 备份文件恢复数据</p>
             </div>
             <label className="btn-outline w-full sm:w-auto cursor-pointer">
               导入 JSON
@@ -225,15 +272,15 @@ export default function Settings() {
 
       {/* About */}
       <div className="card-bento p-5">
-        <h2 className="text-sm font-semibold text-brand-700 mb-3 flex items-center gap-2">
-          <span className="w-1.5 h-4 bg-brand-500 rounded-full" />
+        <h2 className="text-sm font-semibold text-[var(--foreground)] mb-3 flex items-center gap-2">
+          <span className="w-1.5 h-4 bg-[var(--primary)] rounded-full" />
           关于
         </h2>
-        <p className="text-sm text-slate-700">信封打印助手 v1.0.1</p>
-        <p className="text-xs text-slate-500 mt-1">
+        <p className="text-sm text-[var(--foreground)]">信封打印助手 v1.0.1</p>
+        <p className="text-xs text-[var(--muted-foreground)] mt-1">
           支持 ZL/DL/C5/C4 国内信封与 B6/C6 国际信封规格，也可以自己填尺寸。所有数据存储于浏览器本地，不会上传至任何服务器。
         </p>
-        <div className="mt-3 flex gap-3 text-xs text-slate-500">
+        <div className="mt-3 flex gap-3 text-xs text-[var(--muted-foreground)]">
           <span>地址簿 {addresses.length} 条</span>
           <span>打印历史 {printHistory.length} 条</span>
         </div>

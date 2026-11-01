@@ -7,6 +7,7 @@ import { exportAddressesToExcel } from '../utils/exportExcel';
 import { parseFile } from '../utils/importAddresses';
 import type { ImportRow, ImportResult } from '../utils/importAddresses';
 import ConfirmDialog from './ConfirmDialog';
+import { Upload, Download, Plus, Printer, Search, Pencil, Copy } from './icons';
 
 export default function AddressBook() {
   const {
@@ -246,9 +247,10 @@ export default function AddressBook() {
     <div className="space-y-5">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold text-brand-900">地址簿</h2>
+        <h2 className="text-lg font-semibold text-[var(--foreground)]">地址簿</h2>
         <div className="flex gap-2 flex-wrap">
           <button onClick={handleImportClick} className="btn-outline">
+            <Upload className="w-4 h-4" />
             导入地址
           </button>
           <input
@@ -265,17 +267,23 @@ export default function AddressBook() {
             className="btn-outline"
             disabled={addresses.length === 0}
           >
+            <Download className="w-4 h-4" />
             导出 Excel
           </button>
-          <button onClick={() => setShowAdd(!showAdd)} aria-label="新建一条地址" className="btn-cta">
-            + 添加地址
+          <button
+            onClick={() => setShowAdd(!showAdd)}
+            aria-label="新建一条地址"
+            className="btn-primary"
+          >
+            <Plus className="w-4 h-4" />
+            添加地址
           </button>
         </div>
       </div>
 
       {/* Importing indicator */}
       {importing && (
-        <div className="card-bento p-4 text-center text-brand-700 text-sm" role="status" aria-live="polite">
+        <div className="card-bento p-4 text-center text-[var(--accent-foreground)] text-sm" role="status" aria-live="polite">
           正在解析文件…
         </div>
       )}
@@ -284,11 +292,11 @@ export default function AddressBook() {
       {importResult && (
         <div className="card-bento p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-brand-800">导入预览</h3>
-            <span className="text-sm text-brand-700">
+            <h3 className="font-semibold text-[var(--foreground)]">导入预览</h3>
+            <span className="text-sm text-[var(--accent-foreground)]">
               共解析 {importResult.total} 条记录
               {importResult.errors.length > 0 && (
-                <span className="text-amber-700 ml-2">
+                <span className="text-[var(--warning-fg)] ml-2">
                   （{importResult.errors.length} 条跳过）
                 </span>
               )}
@@ -296,7 +304,7 @@ export default function AddressBook() {
           </div>
 
           {importResult.errors.length > 0 && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800 max-h-24 overflow-y-auto">
+            <div className="bg-warning border-warning text-warning rounded-lg p-3 text-xs max-h-24 overflow-y-auto">
               {importResult.errors.map((err, i) => (
                 <div key={i}>{err}</div>
               ))}
@@ -304,22 +312,22 @@ export default function AddressBook() {
           )}
 
           {importResult.rows.length === 0 ? (
-            <p className="text-sm text-slate-600">没有识别到可导入的地址，请检查文件里是否有「收件人」（或「姓名」）和「地址」两列</p>
+            <p className="text-sm text-[var(--muted-foreground)]">没有识别到可导入的地址，请检查文件里是否有「收件人」（或「姓名」）和「地址」两列</p>
           ) : (
-            <div className="-mx-4 px-4 sm:mx-0 sm:px-0 max-h-64 overflow-y-auto border border-brand-100 rounded-lg">
+            <div className="-mx-4 px-4 sm:mx-0 sm:px-0 max-h-64 overflow-y-auto border border-[var(--border)] rounded-lg">
               <table className="w-full min-w-[640px] text-xs">
-                <thead className="bg-brand-50 sticky top-0">
+                <thead className="bg-[var(--muted)] sticky top-0">
                   <tr>
-                    <th scope="col" className="p-2 text-left text-brand-800 font-semibold whitespace-nowrap">收件人</th>
-                    <th scope="col" className="p-2 text-left text-brand-800 font-semibold whitespace-nowrap">地址</th>
-                    <th scope="col" className="p-2 text-left text-brand-800 font-semibold whitespace-nowrap">邮编</th>
-                    <th scope="col" className="p-2 text-left text-brand-800 font-semibold whitespace-nowrap">电话</th>
-                    <th scope="col" className="p-2 text-left text-brand-800 font-semibold whitespace-nowrap">标签</th>
+                    <th scope="col" className="p-2 text-left text-[var(--foreground)] font-semibold whitespace-nowrap">收件人</th>
+                    <th scope="col" className="p-2 text-left text-[var(--foreground)] font-semibold whitespace-nowrap">地址</th>
+                    <th scope="col" className="p-2 text-left text-[var(--foreground)] font-semibold whitespace-nowrap">邮编</th>
+                    <th scope="col" className="p-2 text-left text-[var(--foreground)] font-semibold whitespace-nowrap">电话</th>
+                    <th scope="col" className="p-2 text-left text-[var(--foreground)] font-semibold whitespace-nowrap">标签</th>
                   </tr>
                 </thead>
                 <tbody>
                   {importResult.rows.slice(0, 50).map((row, i) => (
-                    <tr key={i} className="border-t border-brand-50 hover:bg-brand-50/50">
+                    <tr key={i} className="border-t border-[var(--border)] hover:bg-[var(--secondary)]">
                       <td className="p-2">{row.name}</td>
                       <td className="p-2 max-w-[200px] truncate" title={row.address}>
                         {row.address}
@@ -331,7 +339,7 @@ export default function AddressBook() {
                   ))}
                   {importResult.rows.length > 50 && (
                     <tr>
-                      <td colSpan={5} className="p-2 text-center text-slate-500">
+                      <td colSpan={5} className="p-2 text-center text-[var(--muted-foreground)]">
                         … 还有 {importResult.rows.length - 50} 条记录
                       </td>
                     </tr>
@@ -361,7 +369,7 @@ export default function AddressBook() {
         <div className="card-bento p-5 space-y-3">
           {/* B10：姓名 / 单位合并为单一「收件人」，与信封编辑页保持一致 */}
           <div>
-            <label htmlFor="addr-new-name" className="input-label">收件人 <span className="text-red-700" aria-hidden="true">*</span></label>
+            <label htmlFor="addr-new-name" className="input-label">收件人 <span className="text-[var(--error-fg)]" aria-hidden="true">*</span></label>
             <input
               id="addr-new-name"
               className="input-field"
@@ -372,7 +380,7 @@ export default function AddressBook() {
             />
           </div>
           <div>
-            <label htmlFor="addr-new-addr" className="input-label">地址 <span className="text-red-700" aria-hidden="true">*</span></label>
+            <label htmlFor="addr-new-addr" className="input-label">地址 <span className="text-[var(--error-fg)]" aria-hidden="true">*</span></label>
             <textarea
               id="addr-new-addr"
               className="input-field resize-none"
@@ -433,17 +441,20 @@ export default function AddressBook() {
 
       {/* Search & Filter */}
       <div className="flex flex-wrap gap-3 items-center">
-        <div className="w-full sm:w-auto sm:max-w-xs">
+        <div className="relative w-full sm:w-auto sm:max-w-xs">
           <label htmlFor="addr-search" className="sr-only">搜索收件人或地址</label>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] pointer-events-none">
+            <Search className="w-4 h-4" />
+          </span>
           <input
             id="addr-search"
-            className="input-field"
+            className="input-field pl-9"
             placeholder="搜索收件人或地址…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="flex flex-wrap gap-1 bg-brand-50 rounded-xl p-1">
+        <div className="flex flex-wrap gap-1 bg-[var(--muted)] rounded-xl p-1">
           {tags.map((t) => (
             <button
               key={t}
@@ -451,8 +462,8 @@ export default function AddressBook() {
               aria-pressed={tagFilter === t}
               className={`px-3.5 py-2 sm:py-1.5 min-h-[44px] sm:min-h-0 rounded-lg text-xs font-medium transition-all ${
                 tagFilter === t
-                  ? 'bg-white text-brand-800 shadow-sm'
-                  : 'text-brand-700 hover:text-brand-800 hover:bg-white/60'
+                  ? 'bg-[var(--primary-tint)] text-[var(--accent-foreground)]'
+                  : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)]'
               }`}
             >
               {tagLabels[t]}
@@ -465,12 +476,13 @@ export default function AddressBook() {
           <div className="flex items-center gap-2 ml-auto">
             <button
               onClick={allSelected ? deselectAll : selectAll}
-              className="text-xs text-brand-700 hover:text-brand-800 py-2 min-h-[44px] sm:min-h-0"
+              className="text-xs text-[var(--accent-foreground)] hover:opacity-80 py-2 min-h-[44px] sm:min-h-0"
             >
               {allSelected ? '取消全选' : '全选'}
             </button>
             {selectedCount > 0 && (
-              <button onClick={handleBatchPrint} className="btn-cta">
+              <button onClick={handleBatchPrint} className="btn-primary">
+                <Printer className="w-4 h-4" />
                 批量打印（{selectedCount}）
               </button>
             )}
@@ -481,14 +493,14 @@ export default function AddressBook() {
       {/* Address Grid */}
       {filtered.length === 0 ? (
         <div className="card-bento p-8 sm:p-12 text-center">
-          <p className="text-sm leading-7 text-slate-600">
+          <p className="text-sm leading-7 text-[var(--muted-foreground)]">
             {addresses.length === 0
               ? '地址簿还是空的。'
               : '没有匹配的地址，换个关键词，或把标签切回「全部」'}
           </p>
           {addresses.length === 0 && (
-            <p className="mt-1.5 text-[13px] leading-6 text-slate-500">
-              点上方「+ 添加地址」新建，或用「导入地址」从 Excel / CSV 一次性导入。
+            <p className="mt-1.5 text-[13px] leading-6 text-[var(--muted-foreground)]">
+              点上方「添加地址」新建，或用「导入地址」从 Excel / CSV 一次性导入。
             </p>
           )}
         </div>
@@ -497,17 +509,17 @@ export default function AddressBook() {
           {filtered.map((addr) => (
             <div
               key={addr.id}
-              className={`card-bento hover:shadow-md transition-shadow ${
-                selectedIds.has(addr.id) ? 'ring-2 ring-brand-600' : ''
+              className={`card-bento ${
+                selectedIds.has(addr.id) ? 'ring-2 ring-[var(--accent-foreground)]' : ''
               }`}
             >
               {editingId === addr.id ? (
                 /* --- Edit Form --- */
                 <div className="space-y-3">
-                  <h4 className="text-sm font-semibold text-brand-800">编辑地址</h4>
+                  <h4 className="text-sm font-semibold text-[var(--foreground)]">编辑地址</h4>
                   {/* B10：编辑态同样只有单一「收件人」字段 */}
                   <div>
-                    <label htmlFor={`addr-edit-name-${addr.id}`} className="input-label">收件人 <span className="text-red-700" aria-hidden="true">*</span></label>
+                    <label htmlFor={`addr-edit-name-${addr.id}`} className="input-label">收件人 <span className="text-[var(--error-fg)]" aria-hidden="true">*</span></label>
                     <input
                       id={`addr-edit-name-${addr.id}`}
                       className="input-field"
@@ -518,7 +530,7 @@ export default function AddressBook() {
                     />
                   </div>
                   <div>
-                    <label htmlFor={`addr-edit-addr-${addr.id}`} className="input-label">地址 <span className="text-red-700" aria-hidden="true">*</span></label>
+                    <label htmlFor={`addr-edit-addr-${addr.id}`} className="input-label">地址 <span className="text-[var(--error-fg)]" aria-hidden="true">*</span></label>
                     <textarea
                       id={`addr-edit-addr-${addr.id}`}
                       className="input-field resize-none"
@@ -584,13 +596,13 @@ export default function AddressBook() {
                         type="checkbox"
                         checked={selectedIds.has(addr.id)}
                         onChange={() => toggleSelect(addr.id)}
-                        className="h-5 w-5 rounded border-slate-400 text-brand-700 focus:ring-2 focus:ring-brand-700 cursor-pointer"
+                        className="h-5 w-5 rounded border-[var(--input)] text-[var(--primary)] focus:ring-2 focus:ring-[var(--ring)] cursor-pointer"
                       />
                       <span className="sr-only">选择「{addr.name}」用于批量打印</span>
                     </label>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center flex-wrap gap-2">
-                        <span className="font-semibold text-brand-800">{addr.name}</span>
+                        <span className="font-semibold text-[var(--foreground)]">{addr.name}</span>
                         {addr.tag && (
                           <span
                             className={`tag text-xs ${TAG_COLORS[addr.tag] || TAG_COLORS.other}`}
@@ -601,26 +613,28 @@ export default function AddressBook() {
                       </div>
                     </div>
                   </div>
-                  <p className="text-sm text-slate-700 mb-2 ml-6">{addr.address}</p>
+                  <p className="text-sm text-[var(--foreground)] mb-2 ml-6">{addr.address}</p>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 ml-6 mb-2">
                     {addr.postcode && (
-                      <span className="text-xs text-slate-500">邮编：{addr.postcode}</span>
+                      <span className="text-xs text-[var(--muted-foreground)]">邮编：{addr.postcode}</span>
                     )}
                     {addr.phone && (
-                      <span className="text-xs text-slate-500">电话：{addr.phone}</span>
+                      <span className="text-xs text-[var(--muted-foreground)]">电话：{addr.phone}</span>
                     )}
                   </div>
-                  <div className="flex gap-1 mt-3 pt-3 border-t border-brand-50 ml-6">
+                  <div className="flex gap-1 mt-3 pt-3 border-t border-[var(--border)] ml-6">
                     <button
                       onClick={() => handleUseAddress(addr)}
-                      className="text-[13px] sm:text-xs text-brand-700 hover:text-brand-800 font-medium min-h-[44px] sm:min-h-0 px-3 py-2 sm:py-1.5"
+                      className="text-[13px] sm:text-xs text-[var(--accent-foreground)] hover:opacity-80 font-medium min-h-[44px] sm:min-h-0 px-3 py-2 sm:py-1.5 inline-flex items-center gap-1.5"
                     >
+                      <Copy className="w-3.5 h-3.5" />
                       填入信封
                     </button>
                     <button
                       onClick={() => startEdit(addr)}
-                      className="text-[13px] sm:text-xs text-brand-700 hover:text-brand-800 font-medium min-h-[44px] sm:min-h-0 px-3 py-2 sm:py-1.5"
+                      className="text-[13px] sm:text-xs text-[var(--accent-foreground)] hover:opacity-80 font-medium min-h-[44px] sm:min-h-0 px-3 py-2 sm:py-1.5 inline-flex items-center gap-1.5"
                     >
+                      <Pencil className="w-3.5 h-3.5" />
                       编辑
                     </button>
                     <button
@@ -646,7 +660,7 @@ export default function AddressBook() {
           <>
             收件人「{pendingDelete?.name || ''}」，{pendingDelete?.address}
             <br />
-            <span className="text-red-700 font-medium">删除后无法恢复。</span>
+            <span className="text-[var(--error-fg)] font-medium">删除后无法恢复。</span>
           </>
         }
         confirmText="删除"

@@ -1,8 +1,21 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- 主题防闪烁（design-spec §9.2）：首屏绘制前读 localStorage，默认强制深色，避免 FOUC -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('envo-theme');
+          if (t === 'light') {
+            document.documentElement.classList.remove('dark');
+          } else {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
 
     <!-- TDK：逐字取自 docs/content-plan.md §2.1 定稿 -->
     <title>信封打印助手 Envo - 在线排版信封，支持 DL/C5/C4 与 PDF 导出</title>
@@ -79,7 +92,7 @@
     }
     </script>
   </head>
-  <body class="bg-brand-50 text-brand-900 antialiased">
+  <body class="antialiased">
     <div id="root"></div>
     <noscript>
       <h1>Envo 信封打印助手</h1>

@@ -4,6 +4,7 @@ import { drawEnvelope } from '../utils/envelopeCanvas';
 import { ENVELOPE_SIZES } from '../store/types';
 import type { SenderInfo, Address, EnvelopeSettings } from '../store/types';
 import jsPDF from 'jspdf';
+import { Check, TriangleAlert, X } from './icons';
 
 interface AmapTip {
   name: string;
@@ -282,7 +283,7 @@ export default function EnvelopeEditor() {
         {/* Sender Card */}
         <div className="card-bento p-5">
           <h2 className="section-title">
-            <span className="section-dot bg-slate-400" />
+            <span className="section-dot" />
             寄件人信息
           </h2>
           <div className="space-y-3">
@@ -302,7 +303,7 @@ export default function EnvelopeEditor() {
               <label htmlFor="sender-address" className="input-label">地址</label>
               <textarea
                 id="sender-address"
-                className="input-field resize-none"
+                className="input-field"
                 aria-label="寄件人地址"
                 placeholder="北京市朝阳区xx路 1 号"
                 rows={2}
@@ -338,10 +339,10 @@ export default function EnvelopeEditor() {
         </div>
 
         {/* Recipient Card */}
-        <div className="card-bento p-5 ring-1 ring-cta-200/30">
+        <div className="card-bento p-5 ring-1 ring-[var(--accent-ring)]">
           <div className="flex items-center justify-between mb-4">
             <h2 className="section-title !mb-0">
-              <span className="section-dot bg-cta-500" />
+              <span className="section-dot" />
               收件人信息
             </h2>
             <button
@@ -355,7 +356,7 @@ export default function EnvelopeEditor() {
           <div className="space-y-3">
             {/* B10：姓名 / 单位合并为单一「收件人」——信封主行只有一个位置，两个框必然互相覆盖 */}
             <div>
-              <label htmlFor="rcpt-name" className="input-label">收件人 <span className="text-red-700" aria-hidden="true">*</span></label>
+              <label htmlFor="rcpt-name" className="input-label">收件人 <span className="text-[var(--error-fg)]" aria-hidden="true">*</span></label>
               <input
                 id="rcpt-name"
                 className="input-field"
@@ -367,7 +368,7 @@ export default function EnvelopeEditor() {
               />
             </div>
             <div className="relative">
-              <label htmlFor="rcpt-address" className="input-label">地址 <span className="text-red-700" aria-hidden="true">*</span></label>
+              <label htmlFor="rcpt-address" className="input-label">地址 <span className="text-[var(--error-fg)]" aria-hidden="true">*</span></label>
               <textarea
                 id="rcpt-address"
                 className="input-field resize-none pr-8"
@@ -383,18 +384,18 @@ export default function EnvelopeEditor() {
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
               />
               {showSuggestions && (
-                <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 max-h-40 sm:max-h-52 overflow-auto">
+                <div className="absolute left-0 right-0 top-full mt-1 bg-[var(--popover)] border border-[var(--border)] rounded-xl shadow-xl z-50 max-h-40 sm:max-h-52 overflow-auto">
                   {amapSuggestions.map((s, i) => (
                     <button
                       key={i}
                       type="button"
-                      className={`w-full text-left px-4 py-2.5 min-h-[44px] text-sm transition-colors border-b border-slate-50 last:border-0 ${
-                        i === selectedSuggestionIdx ? 'bg-brand-50 text-brand-800' : 'hover:bg-slate-50 text-slate-700'
+                      className={`w-full text-left px-4 py-2.5 min-h-[44px] text-sm transition-colors border-b border-[var(--border)] last:border-0 ${
+                        i === selectedSuggestionIdx ? 'bg-[var(--primary-tint)] text-[var(--accent-foreground)]' : 'hover:bg-[var(--secondary)] text-[var(--foreground)]'
                       }`}
                       onMouseDown={(e) => { e.preventDefault(); selectAmapSuggestion(i); }}
                     >
                       <div className="font-semibold">{s.name}</div>
-                      {s.address && <div className="text-xs text-slate-500 mt-0.5 truncate">{s.address}</div>}
+                      {s.address && <div className="text-xs text-[var(--muted-foreground)] mt-0.5 truncate">{s.address}</div>}
                     </button>
                   ))}
                 </div>
@@ -402,12 +403,12 @@ export default function EnvelopeEditor() {
             </div>
             {/* N-09：未配置高德 Key 时给出可见引导，而不是静默无联想 */}
             {!hasAmapKey && (
-              <p className="text-[13px] leading-6 text-slate-500">
+              <p className="text-[13px] leading-6 text-[var(--muted-foreground)]">
                 没填高德 Key 时联想不生效，可在
                 <button
                   type="button"
                   onClick={() => setActiveTab('settings')}
-                  className="mx-1 py-2 -my-2 font-medium text-brand-700 underline underline-offset-2 hover:text-brand-800"
+                  className="mx-1 py-2 -my-2 font-medium text-[var(--accent-foreground)] hover:opacity-80 underline underline-offset-2"
                 >
                   设置
                 </button>
@@ -444,10 +445,10 @@ export default function EnvelopeEditor() {
         {/* Envelope Settings */}
         <div className="card-bento p-5">
           <h2 className="section-title">
-            <span className="section-dot bg-brand-500" />
+            <span className="section-dot" />
             信封设置
           </h2>
-          <p className="text-[13px] leading-6 text-slate-500 mb-3">
+          <p className="text-[13px] leading-6 text-[var(--muted-foreground)] mb-3">
             内置 ZL/DL/C5/C4 国内规格与 B6/C6 国际规格，也可以自己填尺寸。
           </p>
           <div className="space-y-4">
@@ -515,7 +516,7 @@ export default function EnvelopeEditor() {
               <div
                 role="radiogroup"
                 aria-labelledby="env-format-label"
-                className="flex flex-wrap gap-1 bg-brand-50 rounded-xl p-1"
+                className="flex flex-wrap gap-1 bg-[var(--muted)] rounded-xl p-1"
               >
                 {([
                   { value: 'domestic', label: '国内信封格式' },
@@ -545,10 +546,10 @@ export default function EnvelopeEditor() {
                           document.getElementById(`env-format-${prev.value}`)?.focus();
                         }
                       }}
-                      className={`flex-1 min-w-[120px] px-3.5 py-2 min-h-[44px] sm:min-h-0 rounded-lg text-[13px] sm:text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2 ${
+                      className={`flex-1 min-w-[120px] px-3.5 py-2 min-h-[44px] sm:min-h-0 rounded-lg text-[13px] sm:text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)] ${
                         checked
-                          ? 'bg-white text-brand-800 shadow-sm'
-                          : 'text-brand-700 hover:text-brand-800 hover:bg-white/60'
+                          ? 'bg-[var(--primary-tint)] text-[var(--accent-foreground)]'
+                          : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)]'
                       }`}
                     >
                       {opt.label}
@@ -556,24 +557,24 @@ export default function EnvelopeEditor() {
                   );
                 })}
               </div>
-              <p className="mt-1.5 text-[13px] leading-6 text-slate-500">
+              <p className="mt-1.5 text-[13px] leading-6 text-[var(--muted-foreground)]">
                 每个尺寸都能选国内或国际书写格式；切换尺寸时会自动跟随，之后也可以随时手动改。
               </p>
             </div>
             <div className="flex items-center justify-between min-h-[44px] sm:min-h-0 sm:py-1">
-              <span id="return-addr-label" className="text-sm text-slate-700 font-medium">显示寄件人地址</span>
+              <span id="return-addr-label" className="text-sm text-[var(--foreground)] font-medium">显示寄件人地址</span>
               <button
                 type="button"
                 role="switch"
                 aria-checked={currentEnvelope.showReturnAddress}
                 aria-labelledby="return-addr-label"
                 onClick={() => setCurrentEnvelope({ showReturnAddress: !currentEnvelope.showReturnAddress })}
-                className={`w-11 h-6 shrink-0 rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2 ${
-                  currentEnvelope.showReturnAddress ? 'bg-brand-600' : 'bg-slate-500'
+                className={`w-11 h-6 shrink-0 rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)] ${
+                  currentEnvelope.showReturnAddress ? 'bg-[var(--primary)]' : 'bg-[var(--input)]'
                 } relative`}
               >
                 <span
-                  className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
+                  className={`absolute top-0.5 w-5 h-5 bg-[var(--card)] rounded-full transition-transform duration-200 ${
                     currentEnvelope.showReturnAddress ? 'translate-x-[22px]' : 'translate-x-0.5'
                   }`}
                 />
@@ -583,7 +584,7 @@ export default function EnvelopeEditor() {
         </div>
 
         {/* Mobile CTA guidance（content-plan §7.6 #39：移动端不承诺打印，转接「存入地址簿」） */}
-        <p className="sm:hidden text-[13px] leading-6 text-slate-500 px-1">
+        <p className="sm:hidden text-[13px] leading-6 text-[var(--muted-foreground)] px-1">
           手机上打印容易错位，弹窗也常被拦截。建议在电脑上打开同一个网址再打印 —— 现在可以先点「存入地址簿」，地址不会丢。
         </p>
 
@@ -612,7 +613,7 @@ export default function EnvelopeEditor() {
           <button onClick={clearForm} className="btn-ghost col-span-2 sm:col-span-1 sm:ml-auto">
             清空收件人
           </button>
-          <p className="sm:hidden col-span-2 text-xs leading-5 text-slate-500 px-1">
+          <p className="sm:hidden col-span-2 text-xs leading-5 text-[var(--muted-foreground)] px-1">
             存下地址，到电脑上打开同一个网址就能接着打印
           </p>
         </div>
@@ -624,18 +625,16 @@ export default function EnvelopeEditor() {
             aria-live={msg.type === 'ok' ? 'polite' : undefined}
             className={`text-sm px-4 py-3 rounded-xl border flex items-center justify-between gap-3 ${
               msg.type === 'ok'
-                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                : 'bg-red-50 border-red-200 text-red-800'
+                ? 'bg-success border-success text-success'
+                : 'bg-error border-error text-error'
             }`}
           >
             <span className="flex items-center gap-2">
-              <svg aria-hidden="true" className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-                {msg.type === 'ok' ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008zM10.34 3.94c.09-.54.56-.94 1.11-.94h1.1c.55 0 1.02.4 1.11.94l.149.894c.07.424.384.764.78.932.397.168.847.193 1.233.094l.863-.216c.536-.134 1.1.113 1.36.604l.55.964c.275.483.17 1.095-.244 1.456l-.69.6c-.33.287-.497.73-.431 1.17.066.44.36.81.772.98l.813.328c.53.214.86.744.86 1.318 0 .574-.33 1.104-.86 1.318l-.813.328c-.412.17-.706.54-.772.98-.066.44.1.883.43 1.17l.691.6c.414.361.52.973.244 1.456l-.55.964c-.26.49-.824.738-1.36.604l-.863-.216c-.386-.099-.836-.074-1.233.094-.396.168-.71.508-.78.932l-.149.894c-.09.54-.56.94-1.11.94h-1.1c-.55 0-1.02-.4-1.11-.94l-.149-.894c-.07-.424-.384-.764-.78-.932-.397-.168-.847-.193-1.233-.094l-.863.216c-.536.134-1.1-.113-1.36-.604l-.55-.964c-.275-.483-.17-1.095.244-1.456l.69-.6c.33-.287.497-.73.431-1.17a1.226 1.226 0 00-.772-.98l-.813-.328c-.53-.214-.86-.744-.86-1.318 0-.574.33-1.104.86-1.318l.813-.328c.412-.17.706-.54.772-.98.066-.44-.1-.883-.43-1.17l-.691-.6c-.414-.361-.52-.973-.244-1.456l.55-.964c.26-.49.824-.738 1.36-.604l.863.216c.386.099.836.074 1.233-.094.396-.168.71-.508.78-.932l.149-.894z" />
-                )}
-              </svg>
+              {msg.type === 'ok' ? (
+                <Check className="w-4 h-4 shrink-0" />
+              ) : (
+                <TriangleAlert className="w-4 h-4 shrink-0" />
+              )}
               {msg.text}
             </span>
             <button
@@ -643,7 +642,7 @@ export default function EnvelopeEditor() {
               aria-label="关闭提示"
               className="shrink-0 -m-2 p-2 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 sm:m-0 sm:p-1 flex items-center justify-center opacity-70 hover:opacity-100"
             >
-              <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              <X className="w-4 h-4" />
             </button>
           </div>
         )}
@@ -654,19 +653,19 @@ export default function EnvelopeEditor() {
         <div className="card-bento p-2 sm:p-5 lg:p-6 lg:sticky lg:top-6">
           <div className="flex items-center justify-between mb-5 px-1 sm:px-0">
             <h2 className="section-title !mb-0">
-              <span className="section-dot bg-emerald-500" />
+              <span className="section-dot" />
               信封预览
             </h2>
-            <span className="text-xs font-mono text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg">
+            <span className="text-xs font-mono text-[var(--muted-foreground)] bg-[var(--muted)] px-2.5 py-1 rounded-lg">
               {sizeConfig.width} × {sizeConfig.height} mm
             </span>
           </div>
-          <div className="flex justify-center bg-slate-50/70 rounded-xl p-2 sm:p-5 border border-slate-100 overflow-hidden">
+          <div className="flex justify-center bg-[var(--popover)] rounded-xl p-2 sm:p-5 border border-[var(--border)] overflow-hidden">
             <canvas
               ref={canvasRef}
               role="img"
               aria-label={`信封排版预览，${sizeConfig.label}，收件人 ${recipient.name || '未填写'}，地址 ${recipient.address || '未填写'}`}
-              className="block max-w-full w-auto h-auto max-h-[45vh] sm:max-h-[540px] shadow-md rounded-md"
+              className="block max-w-full w-auto h-auto max-h-[45vh] sm:max-h-[540px] bg-white rounded-md border border-[#3F3F46]"
             />
             <p className="sr-only">
               你的浏览器不支持 Canvas，无法预览信封排版，可以改用导出 PDF 查看效果。
@@ -675,8 +674,8 @@ export default function EnvelopeEditor() {
 
           {/* Address bar for quick selection */}
           {addresses.length > 0 && (
-            <div className="mt-5 pt-4 border-t border-slate-100 px-1 sm:px-0">
-              <p className="text-xs font-semibold text-slate-600 tracking-normal mb-3">快捷地址簿</p>
+            <div className="mt-5 pt-4 border-t border-[var(--border)] px-1 sm:px-0">
+              <p className="text-xs font-semibold text-[var(--muted-foreground)] tracking-normal mb-3">快捷地址簿</p>
               <div className="flex flex-wrap gap-2">
                 {addresses.slice(0, 6).map((addr) => (
                   <button
@@ -684,8 +683,8 @@ export default function EnvelopeEditor() {
                     onClick={() => loadFromAddressbook(addr)}
                     className={`text-[13px] sm:text-xs px-4 sm:px-3 py-2 sm:py-1.5 min-h-[44px] sm:min-h-0 rounded-lg border transition-all duration-150 ${
                       currentRecipient?.id === addr.id
-                        ? 'border-brand-600 bg-brand-50 text-brand-700 shadow-sm'
-                        : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                        ? 'border-[var(--accent-foreground)] bg-[var(--primary-tint)] text-[var(--accent-foreground)]'
+                        : 'border-[var(--border)] text-[var(--muted-foreground)] hover:border-[#52525B] hover:bg-[var(--secondary)]'
                     }`}
                   >
                     {addr.name || '(未命名)'}
@@ -695,7 +694,7 @@ export default function EnvelopeEditor() {
                   <button
                     onClick={() => setActiveTab('addressbook')}
                     aria-label={`查看全部 ${addresses.length} 个地址`}
-                    className="text-[13px] sm:text-xs px-4 sm:px-3 py-2 sm:py-1.5 min-h-[44px] sm:min-h-0 text-brand-700 hover:text-brand-800 transition-colors"
+                    className="text-[13px] sm:text-xs px-4 sm:px-3 py-2 sm:py-1.5 min-h-[44px] sm:min-h-0 text-[var(--accent-foreground)] hover:opacity-80 transition-colors"
                   >
                     +{addresses.length - 6} 更多
                   </button>

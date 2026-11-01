@@ -3,17 +3,95 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    color-scheme: light;
+    --background: #FFFFFF;
+    --foreground: #0F172A;
+    --card: #FFFFFF;
+    --card-foreground: #0F172A;
+    --muted: #F8FAFC;
+    --muted-foreground: #64748B;
+    --popover: #FFFFFF;
+    --border: #E2E8F0;
+    --input: #94A3B8;
+    --primary: #0F766E;
+    --primary-foreground: #FFFFFF;
+    --secondary: #F1F5F9;
+    --secondary-foreground: #334155;
+    --accent-foreground: #0F766E;
+    --ring: #0F766E;
+    --destructive: #B91C1C;
+    --destructive-foreground: #FFFFFF;
+    --success-fg: #065F46;
+    --success-bg: rgba(6, 95, 70, 0.10);
+    --success-border: rgba(6, 95, 70, 0.28);
+    --warning-fg: #92400E;
+    --warning-bg: rgba(146, 64, 14, 0.10);
+    --warning-border: rgba(146, 64, 14, 0.28);
+    --error-fg: #B91C1C;
+    --error-bg: rgba(185, 28, 28, 0.10);
+    --error-border: rgba(185, 28, 28, 0.28);
+    --info-fg: #115E59;
+    --info-bg: rgba(17, 94, 89, 0.10);
+    --info-border: rgba(17, 94, 89, 0.28);
+    /* 衍生令牌：控件态专用（绕过 Tailwind 对 var() 透明度修饰符 /xx 的不支持） */
+    --primary-tint: rgba(15, 118, 110, 0.15); /* 选中/激活底色（两套一致为 brand-700 15%） */
+    --accent-ring: rgba(15, 118, 110, 0.40);  /* 收件人卡片强调环（浅色 brand-700 40%） */
+    --placeholder: #64748B;                    /* 浅色占位符（对白底 4.76:1） */
+  }
+
+  .dark {
+    color-scheme: dark;
+    --background: #0A0A0B;
+    --foreground: #EDEDED;
+    --card: #121214;
+    --card-foreground: #EDEDED;
+    --muted: #18181B;
+    --muted-foreground: #A1A1AA;
+    --popover: #161618;
+    --border: #27272A;
+    --input: #6B7280;
+    --primary: #0F766E;
+    --primary-foreground: #FFFFFF;
+    --secondary: #1F1F23;
+    --secondary-foreground: #EDEDED;
+    --accent-foreground: #2DD4BF;
+    --ring: #0F766E;
+    --destructive: #B91C1C;
+    --destructive-foreground: #FFFFFF;
+    --success-fg: #34D399;
+    --success-bg: rgba(52, 211, 153, 0.12);
+    --success-border: rgba(52, 211, 153, 0.30);
+    --warning-fg: #FBBF24;
+    --warning-bg: rgba(251, 191, 36, 0.12);
+    --warning-border: rgba(251, 191, 36, 0.30);
+    --error-fg: #F87171;
+    --error-bg: rgba(248, 113, 113, 0.12);
+    --error-border: rgba(248, 113, 113, 0.30);
+    --info-fg: #2DD4BF;
+    --info-bg: rgba(45, 212, 191, 0.12);
+    --info-border: rgba(45, 212, 191, 0.30);
+    --primary-tint: rgba(15, 118, 110, 0.15);
+    --accent-ring: rgba(45, 212, 191, 0.40); /* 深色彩亮 teal 40% */
+    --placeholder: #8A8A94;                   /* 深色占位符（对 #161618 5.29:1） */
+  }
+
   * {
     box-sizing: border-box;
   }
+
   body {
     margin: 0;
     min-height: 100dvh;
+    background-color: var(--background);
+    color: var(--foreground);
   }
-  /* 焦点可见态全局基线（design-spec §7.1）：brand-700 实色环，5.47:1 */
+
+  /* 焦点可见态全局基线（design-spec §8）：--ring 两套一致（深 3.42 / 浅 5.47，均 ≥3:1），offset 用背景色 */
   *:focus-visible {
-    @apply outline-none ring-2 ring-brand-700 ring-offset-2 ring-offset-white;
+    @apply outline-none ring-2 ring-[var(--ring)] ring-offset-2 ring-offset-[var(--background)];
   }
+
   /* 减动效（design-spec D8）：只关过渡与动画，不动 transform（开关滑块等布局位移依赖它） */
   @media (prefers-reduced-motion: reduce) {
     *,
@@ -23,6 +101,7 @@
       animation: none !important;
     }
   }
+
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -31,102 +110,124 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: #99F6E4;
+    background: #CBD5E1; /* 浅色轨道灰 */
     border-radius: 3px;
+  }
+  .dark::-webkit-scrollbar-thumb {
+    background: #52525B; /* 深底更协调且可见（design-spec §9.1） */
   }
 }
 
 @layer components {
   .card-bento {
-    @apply bg-white rounded-2xl border border-slate-200/80 shadow-sm
-           p-4 sm:p-5
-           hover:shadow-md transition-shadow duration-300;
+    @apply bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 sm:p-5 hover:border-[#3F3F46] transition-colors duration-200;
   }
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2
-           bg-gradient-to-br from-brand-700 to-brand-800 text-white
+           bg-[var(--primary)] text-[var(--primary-foreground)]
            px-5 py-3 min-h-[44px] sm:py-2.5 sm:min-h-0
-           rounded-xl font-semibold text-[15px] sm:text-sm
-           shadow-sm shadow-brand-200/50
-           hover:from-brand-800 hover:to-brand-900 hover:shadow-md
+           rounded-lg font-semibold text-[15px] sm:text-sm
+           hover:bg-[#115E59]
            active:scale-[0.98] transition-all duration-200
-           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2
-           disabled:opacity-50 disabled:cursor-not-allowed
-           disabled:hover:from-brand-700 disabled:hover:to-brand-800;
-  }
-  .btn-cta {
-    @apply inline-flex items-center justify-center gap-2
-           bg-gradient-to-br from-cta-700 to-cta-800 text-white
-           px-5 py-3 min-h-[44px] sm:py-2.5 sm:min-h-0
-           rounded-xl font-semibold text-[15px] sm:text-sm
-           shadow-sm shadow-cta-200/50
-           hover:from-cta-800 hover:to-cta-900 hover:shadow-md
-           active:scale-[0.98] transition-all duration-200
-           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cta-700 focus-visible:ring-offset-2
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]
            disabled:opacity-50 disabled:cursor-not-allowed;
   }
+  /* 橙色 cta 已退役：强动作统一走 btn-primary（teal 主按钮）或 btn-outline（描边次级） */
   .btn-outline {
     @apply inline-flex items-center justify-center gap-2
-           border border-slate-300 bg-white text-slate-700
+           border border-[#3F3F46] bg-transparent text-[var(--foreground)]
            px-5 py-3 min-h-[44px] sm:py-2.5 sm:min-h-0
-           rounded-xl font-medium text-[15px] sm:text-sm
-           hover:bg-slate-50 hover:border-slate-400 hover:text-slate-900
+           rounded-lg font-medium text-[15px] sm:text-sm
+           hover:bg-[var(--secondary)] hover:border-[#52525B]
            active:scale-[0.98] transition-all duration-200
-           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]
            disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .btn-danger {
     @apply inline-flex items-center justify-center gap-2
-           bg-red-700 text-white
+           bg-[var(--destructive)] text-[var(--destructive-foreground)]
            px-5 py-3 min-h-[44px] sm:py-2.5 sm:min-h-0
-           rounded-xl font-semibold text-[15px] sm:text-sm
-           hover:bg-red-800 active:scale-[0.98] transition-all duration-200
-           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-700 focus-visible:ring-offset-2
+           rounded-lg font-semibold text-[15px] sm:text-sm
+           hover:bg-[#991B1B] active:scale-[0.98] transition-all duration-200
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]
            disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .btn-ghost {
     @apply inline-flex items-center justify-center
            px-3 py-3 min-h-[44px] sm:py-1.5 sm:min-h-0
            rounded-lg text-[15px] sm:text-sm font-medium
-           text-slate-600 hover:bg-slate-100 hover:text-slate-900
+           text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]
            transition-colors duration-150
-           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2;
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)];
   }
   .btn-text-danger {
     @apply inline-flex items-center justify-center
            px-2 py-3 min-h-[44px] sm:py-1.5 sm:min-h-0
            text-[15px] sm:text-xs font-medium
-           text-red-700 hover:text-red-800 hover:bg-red-50 rounded-lg
-           transition-colors duration-150
-           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-700 focus-visible:ring-offset-2;
+           text-[var(--error-fg)] hover:bg-[var(--error-bg)]
+           rounded-lg transition-colors duration-150
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)];
   }
   /* 移动端 16px 输入（design-spec §3.4）：防 iOS 聚焦自动放大引发横向滚动 */
   .input-field {
     @apply w-full px-4 py-3 min-h-[44px]
            text-[16px] sm:text-sm sm:py-2.5 sm:min-h-0
-           bg-slate-50 border border-slate-400 rounded-xl
-           text-slate-800 placeholder-slate-500
+           bg-[var(--popover)] border border-[var(--input)] rounded-lg
+           text-[var(--foreground)]
            transition-all duration-200
-           focus:bg-white focus:outline-none
-           focus:border-brand-700 focus:ring-2 focus:ring-brand-700 focus:ring-offset-1 focus:ring-offset-white
-           disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed;
+           focus:bg-[var(--card)] focus:outline-none
+           focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-1 focus:ring-offset-[var(--background)]
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .input-field::placeholder {
+    color: var(--placeholder);
+    opacity: 1;
   }
   .input-label {
-    @apply block mb-1.5 text-xs font-semibold text-slate-600 tracking-normal;
+    @apply block mb-1.5 text-xs font-semibold text-[var(--muted-foreground)] tracking-normal;
   }
   .section-title {
-    @apply text-sm font-bold text-slate-700 mb-4 flex items-center gap-2;
+    @apply font-semibold text-sm text-[var(--foreground)] mb-4 flex items-center gap-2;
   }
   .section-dot {
-    @apply w-1.5 h-4 rounded-full;
+    @apply w-1.5 h-4 rounded-full bg-[var(--primary)];
   }
   .tag {
     @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium;
   }
   select.input-field {
     @apply appearance-none bg-no-repeat pr-9;
-    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%2364748b'%3E%3Cpath d='m3 5 3 3 3-3'/%3E%3C/svg%3E");
+    /* 下拉箭头：固定中性灰 #64748B，深底（~4:1）与浅底（4.76:1）均可见（design-spec §2 注） */
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%2364748B'%3E%3Cpath d='m3 5 3 3 3-3'/%3E%3C/svg%3E");
     background-size: 12px;
     background-position: right 12px center;
   }
+
+  /* 语义状态色（成功/警告/错误/信息），深浅自动切换（design-spec §2.2） */
+  .text-success { @apply text-[var(--success-fg)]; }
+  .bg-success { @apply bg-[var(--success-bg)]; }
+  .border-success { @apply border-[var(--success-border)]; }
+  .text-warning { @apply text-[var(--warning-fg)]; }
+  .bg-warning { @apply bg-[var(--warning-bg)]; }
+  .border-warning { @apply border-[var(--warning-border)]; }
+  .text-error { @apply text-[var(--error-fg)]; }
+  .bg-error { @apply bg-[var(--error-bg)]; }
+  .border-error { @apply border-[var(--error-border)]; }
+  .text-info { @apply text-[var(--info-fg)]; }
+  .bg-info { @apply bg-[var(--info-bg)]; }
+  .border-info { @apply border-[var(--info-border)]; }
+
+  /* 分类标签 chips（design-spec §6⑨）：深浅双主题取值，靠 .dark 选择器切换，不依赖 Tailwind 透明度修饰符 */
+  .tag-home { color: #065F46; background-color: #ECFDF5; border: 1px solid #A7F3D0; }
+  .tag-work { color: #1E40AF; background-color: #DBEAFE; border: 1px solid #93C5FD; }
+  .tag-family { color: #6B21A8; background-color: #FAF5FF; border: 1px solid #D8B4FE; }
+  .tag-other { color: #334155; background-color: #F1F5F9; border: 1px solid #CBD5E1; }
+  .tag-print { color: #115E59; background-color: #F0FDFA; border: 1px solid #99F6E4; }
+  .tag-pdf { color: #6B21A8; background-color: #FAF5FF; border: 1px solid #D8B4FE; }
+  .dark .tag-home { color: #34D399; background-color: rgba(52, 211, 153, 0.12); border-color: rgba(52, 211, 153, 0.30); }
+  .dark .tag-work { color: #60A5FA; background-color: rgba(96, 165, 250, 0.12); border-color: rgba(96, 165, 250, 0.30); }
+  .dark .tag-family { color: #C084FC; background-color: rgba(192, 132, 252, 0.12); border-color: rgba(192, 132, 252, 0.30); }
+  .dark .tag-other { color: #A1A1AA; background-color: rgba(161, 161, 170, 0.12); border-color: rgba(161, 161, 170, 0.30); }
+  .dark .tag-print { color: #2DD4BF; background-color: rgba(45, 212, 191, 0.12); border-color: rgba(45, 212, 191, 0.30); }
+  .dark .tag-pdf { color: #C084FC; background-color: rgba(192, 132, 252, 0.12); border-color: rgba(192, 132, 252, 0.30); }
 }

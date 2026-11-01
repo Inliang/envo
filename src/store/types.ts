@@ -38,7 +38,7 @@ export interface EnvelopeSettings {
 }
 
 // Canvas 字体栈（design-spec §3.1②：与 UI 栈不同，必须独立一套）。
-// ⚠️ 绝不能把 UI 栈（含 -apple-system / BlinkMacSystemFont）塞进 ctx.font：
+// 注意：绝不能把 UI 栈（含 -apple-system / BlinkMacSystemFont）塞进 ctx.font：
 // CSS font shorthand 解析会把带前导连字符的族名判为非法，整条赋值被静默忽略，
 // 信封回落到 10px 默认字体 —— 预览正常、打印整批报废、控制台零报错。
 export const CANVAS_FONT_STACK =
@@ -78,9 +78,11 @@ export const ENVELOPE_SIZES: Record<string, EnvelopeSizeConfig> = {
   custom: { width: 220, height: 110, label: '自定义', category: 'international' },
 };
 
+// 分类标签 chips（design-spec §6⑨）：映射到 index.css 中定义的 .tag-* 类，
+// 这些类在 .dark 下自动切换为深底亮色方案，浅色沿用 100/800 取值。
 export const TAG_COLORS: Record<string, string> = {
-  home: 'bg-emerald-100 text-emerald-800',
-  work: 'bg-blue-100 text-blue-800',
-  family: 'bg-purple-100 text-purple-800',
-  other: 'bg-slate-100 text-slate-700',
+  home: 'tag-home',
+  work: 'tag-work',
+  family: 'tag-family',
+  other: 'tag-other',
 };

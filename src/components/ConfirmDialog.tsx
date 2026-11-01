@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
+import { TriangleAlert } from './icons';
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -74,7 +75,7 @@ export default function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-[2px]"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-[2px]"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onCancel();
       }}
@@ -85,17 +86,15 @@ export default function ConfirmDialog({
         aria-modal="true"
         aria-labelledby="envo-confirm-title"
         aria-describedby="envo-confirm-desc"
-        className="w-full max-w-[400px] max-h-[85vh] overflow-y-auto bg-white rounded-2xl shadow-xl p-5 sm:p-6"
+        className="w-full max-w-[400px] max-h-[85vh] overflow-y-auto bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-2xl p-5 sm:p-6"
       >
-        <div className="mx-auto mb-4 w-12 h-12 rounded-full bg-red-50 flex items-center justify-center">
-          <svg aria-hidden="true" className="w-6 h-6 text-red-700" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-          </svg>
+        <div className="mx-auto mb-4 w-12 h-12 rounded-full bg-[var(--error-bg)] flex items-center justify-center">
+          <TriangleAlert className="w-6 h-6 text-[var(--error-fg)]" />
         </div>
-        <h3 id="envo-confirm-title" className="text-center text-base font-semibold text-slate-900 leading-snug">
+        <h3 id="envo-confirm-title" className="text-center text-base font-semibold text-[var(--foreground)] leading-snug">
           {title}
         </h3>
-        <p id="envo-confirm-desc" className="mt-2 text-center text-sm leading-7 text-slate-600">
+        <p id="envo-confirm-desc" className="mt-2 text-center text-sm leading-7 text-[var(--muted-foreground)]">
           {description}
         </p>
         <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">

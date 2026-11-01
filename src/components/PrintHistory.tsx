@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useStore } from '../store';
 import { exportHistoryToExcel } from '../utils/exportExcel';
 import ConfirmDialog from './ConfirmDialog';
+import { Download, Trash2 } from './icons';
 
 type FilterKey = 'all' | 'today' | 'week' | 'month';
 
@@ -41,13 +42,14 @@ export default function PrintHistory() {
   return (
     <div className="space-y-5">
       <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-lg font-semibold text-brand-900">打印历史</h2>
+        <h2 className="text-lg font-semibold text-[var(--foreground)]">打印历史</h2>
         <div className="flex gap-2">
           <button
             onClick={() => exportHistoryToExcel(printHistory)}
             className="btn-outline"
             disabled={printHistory.length === 0}
           >
+            <Download className="w-4 h-4" />
             导出 Excel
           </button>
           {printHistory.length > 0 && (
@@ -55,6 +57,7 @@ export default function PrintHistory() {
               onClick={() => { if (window.confirm('确定清空所有打印历史？')) clearHistory(); }}
               className="btn-text-danger"
             >
+              <Trash2 className="w-4 h-4" />
               清空历史
             </button>
           )}
@@ -62,14 +65,14 @@ export default function PrintHistory() {
       </div>
 
       {/* Filter tabs */}
-      <div className="flex flex-wrap gap-1 bg-brand-50 rounded-xl p-1 w-fit">
+      <div className="flex flex-wrap gap-1 bg-[var(--muted)] rounded-xl p-1 w-fit">
         {(['all', 'today', 'week', 'month'] as FilterKey[]).map((k) => (
           <button
             key={k}
             onClick={() => setFilter(k)}
             aria-pressed={filter === k}
             className={`px-3.5 py-2 sm:px-4 sm:py-1.5 min-h-[44px] sm:min-h-0 rounded-lg text-xs font-medium transition-all ${
-              filter === k ? 'bg-white text-brand-800 shadow-sm' : 'text-brand-700 hover:text-brand-800 hover:bg-white/60'
+              filter === k ? 'bg-[var(--primary-tint)] text-[var(--accent-foreground)]' : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)]'
             }`}
           >
             {/* 代码是滚动窗口（过去 7 / 30 天），不是自然周 / 自然月 */}
@@ -80,15 +83,15 @@ export default function PrintHistory() {
 
       {filtered.length === 0 ? (
         <div className="card-bento p-8 sm:p-12 text-center">
-          <p className="text-sm leading-7 text-slate-600">
+          <p className="text-sm leading-7 text-[var(--muted-foreground)]">
             {printHistory.length === 0 ? '还没有打印记录。' : '这段时间没有打印记录，'}
           </p>
           {printHistory.length === 0 ? (
-            <p className="mt-1.5 text-[13px] leading-6 text-slate-500">
+            <p className="mt-1.5 text-[13px] leading-6 text-[var(--muted-foreground)]">
               在「信封编辑」里打印或导出 PDF 后，记录会出现在这里。
             </p>
           ) : (
-            <p className="mt-1.5 text-[13px] leading-6 text-slate-500">把筛选切回「全部」看看。</p>
+            <p className="mt-1.5 text-[13px] leading-6 text-[var(--muted-foreground)]">把筛选切回「全部」看看。</p>
           )}
         </div>
       ) : (
@@ -97,17 +100,13 @@ export default function PrintHistory() {
             <div key={record.id} className="card-bento flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium text-brand-800">{record.recipient.name}</span>
-                  <span className={`tag text-xs ${
-                    record.type === 'print'
-                      ? 'bg-brand-100 text-brand-800'
-                      : 'bg-purple-100 text-purple-800'
-                  }`}>
+                  <span className="font-medium text-[var(--foreground)]">{record.recipient.name}</span>
+                  <span className={`tag text-xs ${record.type === 'print' ? 'tag-print' : 'tag-pdf'}`}>
                     {record.type === 'print' ? '打印' : 'PDF'}
                   </span>
                 </div>
-                <p className="text-sm text-slate-600 truncate">{record.recipient.address}</p>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-sm text-[var(--muted-foreground)] truncate">{record.recipient.address}</p>
+                <p className="text-xs text-[var(--muted-foreground)] mt-1">
                   {new Date(record.printedAt).toLocaleString('zh-CN')} · {record.settings.size} 规格
                 </p>
               </div>
@@ -138,7 +137,7 @@ export default function PrintHistory() {
             {pendingRecord ? new Date(pendingRecord.printedAt).toLocaleString('zh-CN') : ''}
             {pendingRecord?.type === 'pdf' ? ' 导出 PDF' : ' 打印'}。
             <br />
-            <span className="text-red-700 font-medium">删除后无法恢复。</span>
+            <span className="text-[var(--error-fg)] font-medium">删除后无法恢复。</span>
           </>
         }
         confirmText="删除"
