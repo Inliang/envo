@@ -52,6 +52,11 @@ export default function AddressBook() {
   // Delete confirm state（B7：与打印历史共用同一内联确认组件）
   const [pendingDelete, setPendingDelete] = useState<Address | null>(null);
 
+  // 批量打印并发守卫：ref 用于同步拦截（state 更新是异步的，拦不住同一帧内第二次点击），
+  // state 只用于驱动按钮禁用态 / aria-busy 视觉反馈。
+  const [batchPrinting, setBatchPrinting] = useState(false);
+  const batchPrintingRef = useRef(false);
+
   const filtered = addresses.filter((a) => {
     if (tagFilter !== 'all' && a.tag !== tagFilter) return false;
     if (!search) return true;
@@ -184,26 +189,62 @@ export default function AddressBook() {
   };
 
   // --- Batch Print ---
-  const handleBatchPrint = useCallback(() => {
-    const selected = addresses.filter((a) => selectedIds.has(a.id));
-    if (selected.length === 0) return;
+  const handleBatchPrint = useCallback(async () => {
+    // G3-lite：同步并发守卫。函数体最开头检查并置位，覆盖 document.fonts.ready + 双 rAF
+    // 之间的异步窗口；state 更新是异步的，拦不住同一帧内的第二次点击，所以必须用 ref。
+    // 否则第二次点击会在第一次 append 容器后把容器 remove 掉，导致打印内容缺失 / 空白。
+    if (batchPrintingRef.current) return;
+    batchPrintingRef.current = true;
+    setBatchPrinting(true);
 
-    const sender = settings.defaultSender;
-    const envSettings = {
-      ...currentEnvelope,
-      fontSize: settings.defaultEnvelope.fontSize,
-      fontFamily: settings.defaultEnvelope.fontFamily,
-      showReturnAddress: settings.defaultEnvelope.showReturnAddress,
-      showLogo: settings.defaultEnvelope.showLogo,
+    const resetGuard = () => {
+      batchPrintingRef.current = false;
+      setBatchPrinting(false);
     };
+    // 守卫交接：false 表示流程在 cleanup 注册前就结束 / 抛错，由 finally 兜底复位；
+    // true 表示守卫已交给 cleanup（afterprint / 打印对话框关闭兜底）负责复位。
+    let handedOff = false;
+    let container: HTMLDivElement | null = null;
+    let style: HTMLStyleElement | null = null;
+    let cleanupFn: (() => void) | null = null;
+    let onReturn: (() => void) | null = null;
 
-    const container = document.createElement('div');
-    container.id = 'envo-batch-print-area';
-    container.style.cssText =
-      'position:fixed;left:0;top:0;width:100%;z-index:-1;opacity:0;';
+    try {
+      const selected = addresses.filter((a) => selectedIds.has(a.id));
+      if (selected.length === 0) return;
 
-    const style = document.createElement('style');
-    style.textContent = `
+      // G3-lite：只清「上一次已结束 / 异常遗留」的 stale 残留，不再无条件 remove。
+      // 同步守卫已保证此刻没有进行中的打印，遗留节点一律判为 stale 后按 stale 选择器清掉；
+      // 旧实现在这里用 getElementById 无条件 remove，正是快速连点拆掉活动容器的病根。
+      document.querySelectorAll('#envo-batch-print-area, #envo-batch-print-style').forEach((el) => {
+        el.setAttribute('data-envo-batch-state', 'stale');
+      });
+      document.querySelectorAll(
+        '#envo-batch-print-area[data-envo-batch-state="stale"], #envo-batch-print-style[data-envo-batch-state="stale"]'
+      ).forEach((el) => el.remove());
+
+      const sender = settings.defaultSender;
+      const envSettings = {
+        ...currentEnvelope,
+        fontSize: settings.defaultEnvelope.fontSize,
+        fontFamily: settings.defaultEnvelope.fontFamily,
+        showReturnAddress: settings.defaultEnvelope.showReturnAddress,
+        showLogo: settings.defaultEnvelope.showLogo,
+      };
+
+      // 等字体度量稳定后再绘制（Canvas measureText 依赖最终字体），替代固定 200ms 延时
+      await document.fonts.ready;
+
+      container = document.createElement('div');
+      container.id = 'envo-batch-print-area';
+      container.dataset.envoBatchState = 'active';
+      container.style.cssText =
+        'position:fixed;left:0;top:0;width:100%;z-index:-1;opacity:0;';
+
+      style = document.createElement('style');
+      style.id = 'envo-batch-print-style';
+      style.dataset.envoBatchState = 'active';
+      style.textContent = `
       @media print {
         body > *:not(#envo-batch-print-area) { display: none !important; }
         #envo-batch-print-area {
@@ -221,24 +262,73 @@ export default function AddressBook() {
         @page { margin: 0; }
       }
     `;
-    document.head.appendChild(style);
+      document.head.appendChild(style);
 
-    for (const addr of selected) {
-      const canvas = document.createElement('canvas');
-      canvas.className = 'envo-batch-canvas';
-      drawEnvelope(canvas, sender, addr, envSettings, true, 6);
-      container.appendChild(canvas);
-    }
+      for (const addr of selected) {
+        const canvas = document.createElement('canvas');
+        canvas.className = 'envo-batch-canvas';
+        drawEnvelope(canvas, sender, addr, envSettings, true, 4);
+        container.appendChild(canvas);
+      }
 
-    document.body.appendChild(container);
+      document.body.appendChild(container);
 
-    setTimeout(() => {
+      // 双 requestAnimationFrame：等浏览器完成一次布局 + 一次绘制，
+      // 保证 N 张 Canvas 已经栅格化，再触发打印，替代原来 200ms 固定延时。
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      });
+
+      let cleaned = false;
+      cleanupFn = () => {
+        if (cleaned) return;
+        cleaned = true;
+        window.removeEventListener('afterprint', cleanupFn!);
+        if (onReturn) {
+          window.removeEventListener('focus', onReturn);
+          window.removeEventListener('pointerdown', onReturn);
+          document.removeEventListener('visibilitychange', onReturn);
+        }
+        container?.remove();
+        style?.remove();
+        resetGuard();
+      };
+      window.addEventListener('afterprint', cleanupFn);
+      handedOff = true;
+
+      // window.print() 保持在双 rAF 之后立即调用，前面不引入任何固定延时。
+      // 容器只在「打印确实结束」后才由 cleanupFn 移除，对话框停留 30s / 60s 都不受影响。
       window.print();
-      setTimeout(() => {
-        document.body.removeChild(container);
-        document.head.removeChild(style);
-      }, 500);
-    }, 200);
+
+      // G3-lite：去掉 10s 定时清理（Chrome/Edge 打印对话框打开期间 afterprint 不派发，
+      // 用户选打印机、调份数 / 方向、网络打印机响应慢，停留超 10s 很常见；定时 cleanup
+      // 会在栅格化期间移除容器，正是旧实现 500ms 的同一种病根）。
+      // 改用「窗口重新获得焦点 / 用户回到页面 / 页面重新可见」作为 afterprint 不派发时的兜底：
+      // 监听器在 window.print() 返回之后才注册，绝不会在打印栅格化之前抢先移除容器。
+      if (!cleaned) {
+        onReturn = () => {
+          // 用 document.hidden 布尔判断而非状态字符串比较，避免 Tailwind JIT
+          // 把注释/字面量里的某个词误判为工具类、往全站 CSS 里多编一条无关规则。
+          if (!document.hidden) cleanupFn?.();
+        };
+        window.addEventListener('focus', onReturn);
+        window.addEventListener('pointerdown', onReturn);
+        document.addEventListener('visibilitychange', onReturn);
+      }
+    } catch {
+      if (cleanupFn) window.removeEventListener('afterprint', cleanupFn);
+      if (onReturn) {
+        window.removeEventListener('focus', onReturn);
+        window.removeEventListener('pointerdown', onReturn);
+        document.removeEventListener('visibilitychange', onReturn);
+      }
+      container?.remove();
+      style?.remove();
+      resetGuard();
+    } finally {
+      // 提前 return（未选中地址）/ cleanup 注册前抛错：守卫尚未交棒，这里兜底复位
+      if (!handedOff) resetGuard();
+    }
   }, [addresses, selectedIds, settings, currentEnvelope]);
 
   const selectedCount = selectedIds.size;
@@ -481,7 +571,12 @@ export default function AddressBook() {
               {allSelected ? '取消全选' : '全选'}
             </button>
             {selectedCount > 0 && (
-              <button onClick={handleBatchPrint} className="btn-primary">
+              <button
+                onClick={handleBatchPrint}
+                disabled={batchPrinting}
+                aria-busy={batchPrinting}
+                className="btn-primary"
+              >
                 <Printer className="w-4 h-4" />
                 批量打印（{selectedCount}）
               </button>

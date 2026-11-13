@@ -40,6 +40,21 @@
 
 > 打印产物不受影响：信封始终在独立 `window.open` 窗口按写死墨色绘制，不引用任何主题变量。双主题对比度逐处核算，正文 / 控件边框 / 焦点环 / 语义色均达 WCAG AA。
 
+## 2026-11-13 · 打印链路性能优化
+
+### Changed
+- **打印 / 批量打印 Canvas 由 6× 降为 4× DPR**：约 384dpi，仍高于 300dpi 印刷标准，像素量降为原来的 44.4%（C4 由 3819 万像素降至 1697 万）。版面按逻辑坐标等比缩放，字号、邮编格、红框、折行位置与打印物理尺寸均不变；`drawEnvelope` 绘制内部一行未动。
+- **打印图片改用 Blob + object URL**：`canvas.toDataURL()`（同步 PNG + base64 编码，大信封生成几 MB 字符串并塞进 `document.write`）改为项目已有的 `canvasToBlob()` + `URL.createObjectURL()`，打印窗口 HTML 从几 MB 降到几十字节，不再阻塞主线程，也不再让浏览器解析超大 `img` 属性。blob URL 绑定预览窗口关闭（afterprint / beforeunload / pagehide）幂等释放，绝不在图片 `onload` / `decode()` 里 revoke —— 打印子系统可能尚未读完整张位图。
+- **去掉打印前固定延时**：单张由 `img.onload` 后硬等 200ms 改为「`img.decode()` 与 `onload` + 双 rAF 竞速」等图片真正可绘制；批量由 200ms + 500ms 两段定时改为 `document.fonts.ready` + 双 rAF + `afterprint` 清理，`window.print()` 在布局稳定后立即调用。
+
+### Fixed
+- **「发送指令给本地打印机很慢」（P0）**：6× 渲染、同步 base64 编码、几 MB HTML、固定延时四处叠加导致打印指令迟迟不下发，批量打印尤其明显（N 张 6× Canvas 同时栅格化）。
+- **超大信封生成失败无提示**：`toBlob` 返回 null（低端机内存不足、C4 规格）时补 `catch` 给出「请重试或改用导出 PDF」提示；异常路径同时兜底释放 blob、关闭半开的预览窗。
+- **批量打印快速连点会打出空白**：新增 `useRef` 同步并发守卫（state 拦不住同帧双击）、按钮禁用态与 `aria-busy`；残留容器改按 stale 标记清理，不再无条件 remove 掉进行中的打印容器。
+- **打印对话框停留过久会打出空白**：删掉 10s 定时兜底（Chrome/Edge 打印预览期间不派发 `afterprint`，定时清理会在栅格化途中移除容器，旧实现 500ms 是同一病根），改为 `afterprint` + 用户回到页面（focus / pointerdown / visibilitychange）清理，无任何时长假设。
+
+> 打印红线守住：B14 单页（精确 mm + `overflow:hidden` + `print-color-adjust:exact`）、B15（`onafterprint=window.close()`）逐字未动，打印窗口不注入任何主题变量；PDF 导出仍为 6× + `toDataURL`，本次未改（已知仍会有编码卡顿）。
+
 ## 2026-07-05
 
 ### Changed

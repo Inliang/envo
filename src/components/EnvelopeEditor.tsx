@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { useStore } from '../store';
-import { drawEnvelope } from '../utils/envelopeCanvas';
+import { drawEnvelope, canvasToBlob } from '../utils/envelopeCanvas';
 import { ENVELOPE_SIZES } from '../store/types';
 import type { SenderInfo, Address, EnvelopeSettings } from '../store/types';
 import jsPDF from 'jspdf';
@@ -151,8 +151,14 @@ export default function EnvelopeEditor() {
   const handlePrint = useCallback(async () => {
     if (printMode !== 'none') return;
     setPrintMode('print');
+    // 提到 try 外层：catch 里的异常路径也要能释放 blob URL、关掉半开的预览窗。
+    // releasePrintBlob 默认为空操作，blob URL 创建成功后才替换为真实释放函数（幂等）。
+    let releasePrintBlob: () => void = () => {};
+    let pw: Window | null = null;
+    // 打印预览是否已完整建立：true 之后 blob 由预览窗关闭事件释放，catch 不再抢着 revoke。
+    let printArmed = false;
     try {
-      // 让按钮先进入「生成中…」禁用态，再开始 6× 高清渲染，防止低端机上重复点击重复入账
+      // 让按钮先进入「生成中…」禁用态，再开始 4× 高清渲染，防止低端机上重复点击重复入账
       await new Promise((r) => setTimeout(r, 30));
 
       const mmW = currentEnvelope.size === 'custom'
@@ -162,17 +168,38 @@ export default function EnvelopeEditor() {
         ? (currentEnvelope.customHeight || sizeConfig.height)
         : sizeConfig.height;
 
-      // 用 6× DPR 临时 Canvas 绘制高清信封
+      // 用 4× DPR 临时 Canvas 绘制高清信封（≈384dpi，仍高于 300dpi 印刷标准）
       const printCanvas = document.createElement('canvas');
-      drawEnvelope(printCanvas, sender, recipient, currentEnvelope, true, 6);
-      const imgData = printCanvas.toDataURL('image/png', 1.0);
+      drawEnvelope(printCanvas, sender, recipient, currentEnvelope, true, 4);
+      // 走 Blob + object URL：不再同步 toDataURL 生成几 MB base64 字符串阻塞主线程
+      const blob = await canvasToBlob(printCanvas);
+      const blobUrl = URL.createObjectURL(blob);
+
+      // blob URL 生命周期：本次打印独占一个 blob，释放时机一律绑定「预览窗口关闭」，
+      // 绝不在 img.onload / decode 完成时立刻 revoke —— 打印子系统可能尚未读完整张位图。
+      // releasePrintBlob 幂等，afterprint / beforeunload / pagehide / 兜底重复触发均无副作用。
+      let released = false;
+      releasePrintBlob = () => {
+        if (released) return;
+        released = true;
+        URL.revokeObjectURL(blobUrl);
+      };
 
       // 打开干净打印窗口，避免 react-to-print iframe 的 CSS 继承问题
-      const pw = window.open('', '_blank');
+      pw = window.open('', '_blank');
       if (!pw) {
+        releasePrintBlob(); // 弹窗被拦截：没有任何窗口会用到这个 blob，立即释放
         setMsg({ text: '请允许弹出窗口以打印信封', type: 'err' });
         return;
       }
+
+      // 主窗口（blob 创建方）持有释放函数，挂到预览 window 上供其关闭时回调；
+      // 同源跨窗口 blob: URL 可用，且 revoke 回到创建它的 URL 上下文最稳妥。
+      (pw as Window & { __envoReleasePrintBlob?: () => void }).__envoReleasePrintBlob = releasePrintBlob;
+      // 主窗口侧冗余兜底：万一预览窗口内的回调因浏览器兼容问题没跑，
+      // 预览窗口卸载时仍由主窗口释放；只释放、不抢关窗口、不影响已解码图像。
+      pw.addEventListener('pagehide', releasePrintBlob);
+
       const altText = `信封打印预览：${recipient.name || '未命名'}，${sizeConfig.label}`;
       pw.document.write(`
         <!DOCTYPE html>
@@ -193,7 +220,7 @@ export default function EnvelopeEditor() {
               -webkit-print-color-adjust: exact;
               print-color-adjust: exact;
             }
-            /* B14：img 显式给精确 mm 宽高，不再依赖 6× Canvas 的固有比例换算 */
+            /* B14：img 显式给精确 mm 宽高，不再依赖高 DPR Canvas 的固有比例换算 */
             img {
               width: ${mmW}mm;
               height: ${mmH}mm;
@@ -204,21 +231,85 @@ export default function EnvelopeEditor() {
           </style>
         </head>
         <body>
-          <img id="print-img" src="${imgData}" alt="${altText}" />
+          <img id="print-img" src="${blobUrl}" alt="${altText}" />
           <script>
             // B15：打印对话框关闭后（打印或取消都会触发）自动关闭预览窗口
             window.onafterprint = function() { window.close(); };
-            document.getElementById('print-img').onload = function() {
-              setTimeout(function() { window.print(); }, 200);
+            // 预览窗口关闭的所有路径都释放主窗口创建的 blob URL：
+            // 打印完成 / 取消打印（afterprint→close）/ 用户直接关窗（beforeunload、pagehide）。
+            // 释放发生在窗口关闭时，晚于打印栅格化，绝不会造成打印空白。
+            var releaseBlob = function() {
+              try {
+                // 优先级 1：回调主窗口在创建 blob 的上下文里 revoke
+                if (typeof window.__envoReleasePrintBlob === 'function') {
+                  window.__envoReleasePrintBlob();
+                  return;
+                }
+                // 优先级 2：同源 blob: URL 存储按 origin 共享，退回 opener 的 URL 直接释放
+                if (window.opener && window.opener.URL) {
+                  window.opener.URL.revokeObjectURL('${blobUrl}');
+                  return;
+                }
+                // 优先级 3：opener 已不可用，预览窗口本地 revoke 同样按 origin 生效
+                URL.revokeObjectURL('${blobUrl}');
+              } catch (e) {}
             };
+            window.addEventListener('afterprint', releaseBlob);
+            window.addEventListener('beforeunload', releaseBlob);
+            window.addEventListener('pagehide', releaseBlob);
+
+            // 等图片真正加载/解码完成再 print，替代原来固定 200ms 的 setTimeout。
+            // 两条「已可绘制」信号竞速，谁先到谁触发，doPrint 幂等保证只打印一次：
+            //   decode()          —— 位图解码完成的精确信号；
+            //   onload + 双 rAF   —— 至少完成一帧布局+绘制，decode 被节流/不支持时的兜底。
+            // 任意一条生效都不会「图还没解码就 print 出空白」，也不会因单一信号不派发而卡死。
+            var img = document.getElementById('print-img');
+            var printed = false;
+            var doPrint = function() {
+              if (printed) return;
+              printed = true;
+              window.print();
+            };
+            var onImageReady = function() {
+              requestAnimationFrame(function() { requestAnimationFrame(doPrint); });
+              if (typeof img.decode === 'function') {
+                img.decode().then(doPrint).catch(function() {});
+              }
+            };
+            // 极端兜底：图裂时也把打印对话框拉起，避免预览窗口永久无响应
+            // （该 blob 来自刚生成的有效 PNG，同源可读，此路径实际不可达）。
+            img.onerror = doPrint;
+            if (img.complete && img.naturalWidth > 0) {
+              onImageReady(); // blob 已同步就绪，load 事件可能早于本脚本执行
+            } else {
+              img.onload = onImageReady;
+            }
           </script>
         </body>
         </html>
       `);
       pw.document.close();
+      printArmed = true;
 
       addPrintRecord({ recipient, sender, settings: currentEnvelope, type: 'print' });
       setMsg({ text: '打印预览已打开，打印完成后窗口将自动关闭', type: 'ok' });
+    } catch {
+      // canvasToBlob 在 toBlob 返回 null 时 reject（envelopeCanvas.ts:546）：低端机内存不足、
+      // C4 4× 仍达 1697 万像素、或浏览器对超大 canvas 编码失败都会走到这里。
+      // 与 handleExportPDF 的 catch 对齐，必须给用户可见提示，不能静默穿透 React 事件处理器。
+      // blob 释放：仅当打印预览尚未完整建立时由 catch 兜底。window.open / document.write /
+      // document.close 抛错都落在这个窗口内，此时预览窗关闭回调还没挂上，不 revoke 就是死区。
+      // 若已 printArmed，blob 由预览窗的 afterprint / beforeunload / pagehide 释放；
+      // 此刻 revoke 反而可能让正在加载的预览图裂开，故不抢。
+      if (!printArmed) {
+        releasePrintBlob();
+        // 关掉可能已被打开但写入失败的空白预览窗：它的 B15 onafterprint 永远不会触发，
+        // 不主动关会留下一个只能由用户手动关闭的孤儿窗口。
+        if (pw) {
+          try { pw.close(); } catch { /* 窗口已关闭，忽略 */ }
+        }
+      }
+      setMsg({ text: '打印内容生成失败，请重试或改用导出 PDF', type: 'err' });
     } finally {
       setPrintMode('none');
     }
