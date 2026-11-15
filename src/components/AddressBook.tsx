@@ -3,7 +3,7 @@ import { useStore } from '../store';
 import { TAG_COLORS } from '../store/types';
 import type { Address } from '../store/types';
 import { drawEnvelope } from '../utils/envelopeCanvas';
-import { exportAddressesToExcel } from '../utils/exportExcel';
+import { exportAddressesToExcel, exportSelectedAddressesToExcel, exportAddressTemplate } from '../utils/exportExcel';
 import { parseFile } from '../utils/importAddresses';
 import type { ImportRow, ImportResult } from '../utils/importAddresses';
 import ConfirmDialog from './ConfirmDialog';
@@ -47,10 +47,14 @@ export default function AddressBook() {
   // Import state
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [importing, setImporting] = useState(false);
+  const [importNotice, setImportNotice] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Delete confirm state（B7：与打印历史共用同一内联确认组件）
   const [pendingDelete, setPendingDelete] = useState<Address | null>(null);
+
+  // 批量打印二次确认（与删除确认各自独立 state；打印是实体不可逆动作）
+  const [pendingBatchPrint, setPendingBatchPrint] = useState(false);
 
   // 批量打印并发守卫：ref 用于同步拦截（state 更新是异步的，拦不住同一帧内第二次点击），
   // state 只用于驱动按钮禁用态 / aria-busy 视觉反馈。
@@ -152,20 +156,73 @@ export default function AddressBook() {
 
   const allSelected = filtered.length > 0 && selectedIds.size === filtered.length;
 
+  // 以「当前地址簿里真实存在的选中项」为准，避免选中集中残留已删除 / 已被备份替换的脏 id，
+  // 让按钮张数、确认框张数与实际打印张数三者一致。
+  const selectedAddresses = addresses.filter((a) => selectedIds.has(a.id));
+  const selectedCount = selectedAddresses.length;
+
   // --- Import ---
   const handleImportClick = () => {
+    setImportNotice('');
     fileInputRef.current?.click();
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
     setImporting(true);
+    setImportNotice('');
+    setImportResult(null);
+
+    const rows: ImportRow[] = [];
+    const errors: string[] = [];
+    const matchedColumns: string[] = [];
+    const unmatchedColumns: string[] = [];
+    const headers: string[] = [];
+    const notices: string[] = [];
+
     try {
-      const result = await parseFile(file);
-      setImportResult(result);
+      for (const file of files) {
+        try {
+          const result = await parseFile(file);
+          rows.push(...result.rows);
+          // 多文件时每条错误都带文件名前缀，用户能定位到具体是哪个文件
+          errors.push(...result.errors.map((err) => `${file.name} ${err}`));
+          for (const col of result.matchedColumns || []) {
+            if (!matchedColumns.includes(col)) matchedColumns.push(col);
+          }
+          for (const col of result.unmatchedColumns || []) {
+            if (!unmatchedColumns.includes(col)) unmatchedColumns.push(col);
+          }
+          for (const h of result.headers || []) {
+            if (!headers.includes(h)) headers.push(h);
+          }
+          if (result.notice) notices.push(`${file.name}：${result.notice}`);
+        } catch (err) {
+          errors.push(`${file.name}：文件解析失败，${(err as Error).message || '请检查文件是否损坏'}`);
+        }
+      }
+
+      const merged: ImportResult = {
+        rows,
+        errors,
+        total: rows.length,
+        matchedColumns,
+        unmatchedColumns,
+        headers,
+        notice: notices.length > 0 ? notices.join('；') : undefined,
+      };
+
+      // 全部失败时给一句人话，不要只留一堆零散行号
+      if (rows.length === 0) {
+        merged.errors.push('所有文件都没有解析出可导入的地址，请检查表头是否包含「收件人」和「地址」，或先下载导入模板对照。');
+      }
+
+      // 单个文件解析失败不影响其他文件，合并结果照常进预览
+      setImportResult(merged);
     } finally {
       setImporting(false);
+      // 不清空的话，连续选同一个文件不会再触发 change
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
@@ -180,8 +237,19 @@ export default function AddressBook() {
       tag: row.tag,
       tagLabel: row.tagLabel || undefined,
     }));
+
+    // addAddresses 返回 void，但它内部是 zustand 的同步 set，调用返回后 getState() 立刻
+    // 能读到最新数组；以调用前的长度做尾部切片，就是本批新增的 N 条（id 由 store 的
+    // genId() 生成，只能从这里取）。不能用 React 闭包里的 addresses —— 那是本次渲染的旧快照。
+    const beforeCount = useStore.getState().addresses.length;
     addAddresses(addrs);
+    const newest = useStore.getState().addresses;
+    const newIds = newest.slice(beforeCount).map((a) => a.id);
+
+    // 覆盖而不是追加：只选本批，绝不把历史地址带进批量打印
+    setSelectedIds(new Set(newIds));
     setImportResult(null);
+    setImportNotice(`已导入 ${newIds.length} 条并自动选中本批，可直接点「批量打印」；「全选」会连同历史地址一起选中，请核对确认框里的张数。`);
   };
 
   const handleImportCancel = () => {
@@ -189,7 +257,9 @@ export default function AddressBook() {
   };
 
   // --- Batch Print ---
-  const handleBatchPrint = useCallback(async () => {
+  // 上一轮修好的打印性能链路原样保留，仅把函数名改为 runBatchPrint；
+  // 入口换成 requestBatchPrint，先弹二次确认，确认后才调用本函数。
+  const runBatchPrint = useCallback(async () => {
     // G3-lite：同步并发守卫。函数体最开头检查并置位，覆盖 document.fonts.ready + 双 rAF
     // 之间的异步窗口；state 更新是异步的，拦不住同一帧内的第二次点击，所以必须用 ref。
     // 否则第二次点击会在第一次 append 容器后把容器 remove 掉，导致打印内容缺失 / 空白。
@@ -331,7 +401,13 @@ export default function AddressBook() {
     }
   }, [addresses, selectedIds, settings, currentEnvelope]);
 
-  const selectedCount = selectedIds.size;
+  // 二次确认入口：只负责打开确认框，不碰打印链路、不改动选中集。
+  // 取消时 ConfirmDialog 只把 pendingBatchPrint 置回 false，不触发任何打印。
+  const requestBatchPrint = () => {
+    if (selectedCount === 0 || batchPrintingRef.current) return;
+    setImportNotice('');
+    setPendingBatchPrint(true);
+  };
 
   return (
     <div className="space-y-5">
@@ -339,19 +415,28 @@ export default function AddressBook() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold text-[var(--foreground)]">地址簿</h2>
         <div className="flex gap-2 flex-wrap">
-          <button onClick={handleImportClick} className="btn-outline">
+          <button
+            onClick={handleImportClick}
+            title="可一次选择多个 CSV / XLSX / JSON 文件"
+            className="btn-outline"
+          >
             <Upload className="w-4 h-4" />
             导入地址
           </button>
           <input
             ref={fileInputRef}
             type="file"
+            multiple
             accept=".csv,.xlsx,.xls,.json"
             onChange={handleFileChange}
             className="hidden"
             aria-hidden="true"
             tabIndex={-1}
           />
+          <button onClick={exportAddressTemplate} className="btn-outline">
+            <Download className="w-4 h-4" />
+            下载模板
+          </button>
           <button
             onClick={() => exportAddressesToExcel(addresses)}
             className="btn-outline"
@@ -360,6 +445,15 @@ export default function AddressBook() {
             <Download className="w-4 h-4" />
             导出 Excel
           </button>
+          {selectedCount > 0 && (
+            <button
+              onClick={() => exportSelectedAddressesToExcel(selectedAddresses)}
+              className="btn-outline"
+            >
+              <Download className="w-4 h-4" />
+              导出选中（{selectedCount}）
+            </button>
+          )}
           <button
             onClick={() => setShowAdd(!showAdd)}
             aria-label="新建一条地址"
@@ -378,6 +472,16 @@ export default function AddressBook() {
         </div>
       )}
 
+      {/* 导入成功反馈：导入预览关闭后仍可见，说明本批已自动选中、可直接批量打印 */}
+      {importNotice && (
+        <div className="card-bento p-4 flex flex-wrap items-center justify-between gap-2" role="status" aria-live="polite">
+          <p className="text-sm text-[var(--accent-foreground)]">{importNotice}</p>
+          <button type="button" onClick={() => setImportNotice('')} className="btn-outline">
+            知道了
+          </button>
+        </div>
+      )}
+
       {/* Import Preview Modal */}
       {importResult && (
         <div className="card-bento p-5 space-y-4">
@@ -393,6 +497,21 @@ export default function AddressBook() {
             </span>
           </div>
 
+          {importResult.notice && (
+            <p className="text-xs text-[var(--accent-foreground)]" role="status">
+              {importResult.notice}
+            </p>
+          )}
+
+          {/* 列匹配结果：可选字段，老结果对象不带时自动降级不显示 */}
+          {(importResult.matchedColumns?.length || importResult.unmatchedColumns?.length) ? (
+            <p className="text-xs text-[var(--muted-foreground)]">
+              已识别列：<span className="text-[var(--foreground)]">{(importResult.matchedColumns || []).join('、') || '无'}</span>
+              <br />
+              未识别（将忽略）：<span className="text-[var(--warning-fg)]">{(importResult.unmatchedColumns || []).join('、') || '无'}</span>
+            </p>
+          ) : null}
+
           {importResult.errors.length > 0 && (
             <div className="bg-warning border-warning text-warning rounded-lg p-3 text-xs max-h-24 overflow-y-auto">
               {importResult.errors.map((err, i) => (
@@ -402,7 +521,12 @@ export default function AddressBook() {
           )}
 
           {importResult.rows.length === 0 ? (
-            <p className="text-sm text-[var(--muted-foreground)]">没有识别到可导入的地址，请检查文件里是否有「收件人」（或「姓名」）和「地址」两列</p>
+            <p className="text-sm text-[var(--muted-foreground)]">
+              没有识别到可导入的地址。
+              {(importResult.headers || []).filter(Boolean).length > 0 &&
+                `实际读到的表头：${(importResult.headers || []).filter(Boolean).join('、')}。`}
+              请检查文件里是否有「收件人」（或「姓名」）和「地址」两列，或下载导入模板对照。
+            </p>
           ) : (
             <div className="-mx-4 px-4 sm:mx-0 sm:px-0 max-h-64 overflow-y-auto border border-[var(--border)] rounded-lg">
               <table className="w-full min-w-[640px] text-xs">
@@ -572,7 +696,7 @@ export default function AddressBook() {
             </button>
             {selectedCount > 0 && (
               <button
-                onClick={handleBatchPrint}
+                onClick={requestBatchPrint}
                 disabled={batchPrinting}
                 aria-busy={batchPrinting}
                 className="btn-primary"
@@ -595,7 +719,7 @@ export default function AddressBook() {
           </p>
           {addresses.length === 0 && (
             <p className="mt-1.5 text-[13px] leading-6 text-[var(--muted-foreground)]">
-              点上方「添加地址」新建，或用「导入地址」从 Excel / CSV 一次性导入。
+              点上方「添加地址」新建，或用「导入地址」一次选多个 Excel / CSV 文件导入；不确定表头可以先「下载模板」。
             </p>
           )}
         </div>
@@ -770,6 +894,36 @@ export default function AddressBook() {
           setPendingDelete(null);
         }}
         onCancel={() => setPendingDelete(null)}
+      />
+
+      {/* 批量打印二次确认：打印是实体不可逆动作，默认焦点落「取消」，Esc 可取消 */}
+      <ConfirmDialog
+        open={pendingBatchPrint}
+        title={`确认批量打印（${selectedCount} 张）`}
+        description={
+          <>
+            将打印 <span className="font-medium text-[var(--foreground)]">{selectedCount}</span> 张信封，请确认打印机已放好 {selectedCount} 张信封。
+            <br />
+            <span className="text-[var(--foreground)]">本批收件人：</span>
+            <br />
+            {selectedAddresses.slice(0, 5).map((a) => (
+              <span key={a.id} className="text-[var(--foreground)]">
+                · {a.name}
+                <br />
+              </span>
+            ))}
+            {selectedCount > 5 ? `… 等共 ${selectedCount} 条` : `共 ${selectedCount} 条`}
+            <br />
+            <span className="text-[var(--warning-fg)] font-medium">打印为实体操作，确认后无法撤销，请先核对张数与收件人。</span>
+          </>
+        }
+        confirmText="确认打印"
+        cancelText="取消"
+        onConfirm={() => {
+          setPendingBatchPrint(false);
+          runBatchPrint();
+        }}
+        onCancel={() => setPendingBatchPrint(false)}
       />
     </div>
   );
