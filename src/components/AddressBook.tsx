@@ -2,12 +2,33 @@ import { useState, useRef, useCallback } from 'react';
 import { useStore } from '../store';
 import { TAG_COLORS, ENVELOPE_SIZES } from '../store/types';
 import type { Address } from '../store/types';
-import { drawEnvelope } from '../utils/envelopeCanvas';
+import { drawEnvelope, canvasToBlob } from '../utils/envelopeCanvas';
 import { exportAddressesToExcel, exportSelectedAddressesToExcel, exportAddressTemplate } from '../utils/exportExcel';
 import { parseFile } from '../utils/importAddresses';
 import type { ImportRow, ImportResult } from '../utils/importAddresses';
 import ConfirmDialog from './ConfirmDialog';
 import { Upload, Download, Plus, Printer, Search, Pencil, Copy } from './icons';
+import jsPDF from 'jspdf';
+
+/**
+ * 批量打印窗口 HTML 中插入用户可控文本（收件人姓名）前做最小转义，
+ * 防止姓名里的引号 / 尖括号破坏 img 的 alt 属性或注入脚本。纯字符串处理，零依赖。
+ */
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => (
+    c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' : c === '"' ? '&quot;' : '&#39;'
+  ));
+}
+
+/** canvasToBlob 产的 PNG blob → jsPDF.addImage 需要的 data URL（FileReader，零定时器） */
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error('blob to data URL failed'));
+    reader.readAsDataURL(blob);
+  });
+}
 
 export default function AddressBook() {
   const {
@@ -20,6 +41,7 @@ export default function AddressBook() {
     deleteAddress,
     setCurrentRecipient,
     setActiveTab,
+    addPrintRecord,
   } = useStore();
 
   const [search, setSearch] = useState('');
@@ -60,6 +82,10 @@ export default function AddressBook() {
   // state 只用于驱动按钮禁用态 / aria-busy 视觉反馈。
   const [batchPrinting, setBatchPrinting] = useState(false);
   const batchPrintingRef = useRef(false);
+
+  // 批量导出 PDF 的独立并发守卫（与打印各自一个 ref，按钮侧互斥防止同时跑重活）
+  const [batchExporting, setBatchExporting] = useState(false);
+  const batchExportingRef = useRef(false);
 
   const filtered = addresses.filter((a) => {
     if (tagFilter !== 'all' && a.tag !== tagFilter) return false;
@@ -257,12 +283,15 @@ export default function AddressBook() {
   };
 
   // --- Batch Print ---
-  // 上一轮修好的打印性能链路原样保留，仅把函数名改为 runBatchPrint；
-  // 入口换成 requestBatchPrint，先弹二次确认，确认后才调用本函数。
+  // 独立打印窗口方案，与从不出问题的单张打印（EnvelopeEditor.handlePrint）同构。
+  // 废弃上一版「往主页面动态注入 @media print style + 用 container 变量把 canvas 以
+  // position: static 塞进 body」的脆弱路径：
+  // 那条路在真实打印对话框默认设置下（纸张 A4、页眉页脚开）挡不住浏览器页眉页脚，
+  // 纸上会印出 1/N 页码；且注入 / 清理时机稍偏就多出一张空白页。
+  // 新方案：每张 4× DPR 绘制 → blob → objectURL，一个干净 window.open 预览窗装 N 张
+  // <img>，精确 mm @page + margin:0 + 每张独占一页（末张不强制分页）。
   const runBatchPrint = useCallback(async () => {
-    // G3-lite：同步并发守卫。函数体最开头检查并置位，覆盖 document.fonts.ready + 双 rAF
-    // 之间的异步窗口；state 更新是异步的，拦不住同一帧内的第二次点击，所以必须用 ref。
-    // 否则第二次点击会在第一次 append 容器后把容器 remove 掉，导致打印内容缺失 / 空白。
+    // 同步并发守卫：ref 拦同一帧第二次点击（state 更新异步拦不住），state 驱动按钮禁用态。
     if (batchPrintingRef.current) return;
     batchPrintingRef.current = true;
     setBatchPrinting(true);
@@ -271,34 +300,26 @@ export default function AddressBook() {
       batchPrintingRef.current = false;
       setBatchPrinting(false);
     };
-    // 守卫交接：false 表示流程在 cleanup 注册前就结束 / 抛错，由 finally 兜底复位；
-    // true 表示守卫已交给 cleanup（afterprint / 打印对话框关闭兜底）负责复位。
-    let handedOff = false;
-    let container: HTMLDivElement | null = null;
-    let style: HTMLStyleElement | null = null;
-    let cleanupFn: (() => void) | null = null;
-    let onReturn: (() => void) | null = null;
+    // 守卫复位幂等：预览窗关闭事件与 catch / finally 可能都触发，只第一次生效。
+    let guardReleased = false;
+    const releaseGuardOnce = () => {
+      if (guardReleased) return;
+      guardReleased = true;
+      resetGuard();
+    };
+
+    // printArmed：预览窗是否完整建立。为 false 时 catch / finally 兜底释放 blob、复位守卫；
+    // 为 true 后 blob 与守卫都交给预览窗关闭事件，catch 不再抢着 revoke（防图裂）。
+    let printArmed = false;
+    let pw: Window | null = null;
+    let releaseAllBlobs: () => void = () => {};
 
     try {
       const selected = addresses.filter((a) => selectedIds.has(a.id));
       if (selected.length === 0) return;
 
-      // G3-lite：只清「上一次已结束 / 异常遗留」的 stale 残留，不再无条件 remove。
-      // 同步守卫已保证此刻没有进行中的打印，遗留节点一律判为 stale 后按 stale 选择器清掉；
-      // 旧实现在这里用 getElementById 无条件 remove，正是快速连点拆掉活动容器的病根。
-      document.querySelectorAll('#envo-batch-print-area, #envo-batch-print-style').forEach((el) => {
-        el.setAttribute('data-envo-batch-state', 'stale');
-      });
-      document.querySelectorAll(
-        '#envo-batch-print-area[data-envo-batch-state="stale"], #envo-batch-print-style[data-envo-batch-state="stale"]'
-      ).forEach((el) => el.remove());
-
       const sender = settings.defaultSender;
-      // B14（批量链路对齐单张打印）：纸张尺寸必须按当前信封规格精确给出。
-      // 批量链路原先只有 `@page { margin:0 }`、没有 size，Chrome 会按打印机默认纸（A4/Letter）
-      // 排版，再把 4× DPR 的 canvas 用 max-width:100%/height:auto 缩放，缩放后的高度与纸张
-      // 可打印区差出亚像素，首尾就会多排一张空白纸；同时默认纸留出的边距让浏览器「页眉和页脚」
-      // 显形，在纸上印出 `1/3` 这类页码。这里按与单张打印同一套口径取 mm 尺寸。
+      // mmW/mmH 与单张打印同口径：custom 用自定义尺寸（缺省回退 220×110），否则取规格表。
       const sizeConfig = ENVELOPE_SIZES[currentEnvelope.size];
       const mmW = currentEnvelope.size === 'custom'
         ? (currentEnvelope.customWidth || sizeConfig.width)
@@ -314,130 +335,223 @@ export default function AddressBook() {
         showLogo: settings.defaultEnvelope.showLogo,
       };
 
-      // 等字体度量稳定后再绘制（Canvas measureText 依赖最终字体），替代固定 200ms 延时
+      // 等字体度量稳定后再绘制（Canvas measureText 依赖最终字体），沿用原链路，不用固定延时。
       await document.fonts.ready;
 
-      container = document.createElement('div');
-      container.id = 'envo-batch-print-area';
-      container.dataset.envoBatchState = 'active';
-      container.style.cssText =
-        'position:fixed;left:0;top:0;width:100%;z-index:-1;opacity:0;';
-
-      style = document.createElement('style');
-      style.id = 'envo-batch-print-style';
-      style.dataset.envoBatchState = 'active';
-      // B14 防护在批量链路的对应实现：
-      // 1) @page 显式 size + margin:0 —— 纸张就是信封本身，没有留给浏览器页眉页脚的边距，
-      //    `1/3` 这类页码不会再印到纸上；同时也避免打印机默认纸造成的尺寸错配。
-      // 2) * / html / body 清 margin、padding，并锁 width；overflow-x:hidden 兜住横向亚像素溢出。
-      //    这里刻意不写 overflow:hidden 或固定 body height —— 单张只有一张图那样写没问题，
-      //    批量有 N 张 canvas，固定成一页高会把第 2..N 张直接裁掉。
-      // 3) canvas 用精确 mm 宽高而不是 max-width:100%/height:auto —— 消除 4× 固有尺寸换算
-      //    回 mm 时的四舍五入误差，这是空白页的直接来源。
-      // 4) 强制分页只加在「非最后一张」；Tailwind JIT 不会扫到这里（动态字符串），
-      //    所以同时写 break-after 与 page-break-after 两套属性覆盖新旧内核。
-      style.textContent = `
-      @media print {
-        @page { size: ${mmW}mm ${mmH}mm; margin: 0; }
-        * { margin: 0; padding: 0; }
-        html, body {
-          width: ${mmW}mm;
-          overflow-x: hidden;
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-        }
-        body > *:not(#envo-batch-print-area) { display: none !important; }
-        #envo-batch-print-area {
-          position: static !important;
-          opacity: 1 !important;
-          z-index: auto !important;
-          width: ${mmW}mm !important;
-        }
-        .envo-batch-canvas {
-          display: block;
-          width: ${mmW}mm;
-          height: ${mmH}mm;
-          break-inside: avoid;
-          page-break-inside: avoid;
-        }
-        .envo-batch-canvas:not(:last-child) {
-          break-after: page;
-          page-break-after: always;
-        }
-        .envo-batch-canvas:last-child {
-          break-after: auto;
-          page-break-after: auto;
-        }
-      }
-    `;
-      document.head.appendChild(style);
-
+      // 每张信封独立 4× DPR 绘制 → PNG blob → objectURL，与单张打印同口径。
+      const blobUrls: string[] = [];
       for (const addr of selected) {
         const canvas = document.createElement('canvas');
-        canvas.className = 'envo-batch-canvas';
         drawEnvelope(canvas, sender, addr, envSettings, true, 4);
-        container.appendChild(canvas);
+        blobUrls.push(URL.createObjectURL(await canvasToBlob(canvas)));
       }
 
-      document.body.appendChild(container);
-
-      // 双 requestAnimationFrame：等浏览器完成一次布局 + 一次绘制，
-      // 保证 N 张 Canvas 已经栅格化，再触发打印，替代原来 200ms 固定延时。
-      await new Promise<void>((resolve) => {
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-      });
-
-      let cleaned = false;
-      cleanupFn = () => {
-        if (cleaned) return;
-        cleaned = true;
-        window.removeEventListener('afterprint', cleanupFn!);
-        if (onReturn) {
-          window.removeEventListener('focus', onReturn);
-          window.removeEventListener('pointerdown', onReturn);
-          document.removeEventListener('visibilitychange', onReturn);
-        }
-        container?.remove();
-        style?.remove();
-        resetGuard();
+      // 幂等批量释放：所有 blob 绑定「预览窗关闭」统一 revoke，
+      // 绝不在 img.onload / decode 里 revoke（打印子系统可能尚未读完整张位图）。
+      let blobsReleased = false;
+      releaseAllBlobs = () => {
+        if (blobsReleased) return;
+        blobsReleased = true;
+        blobUrls.forEach((url) => URL.revokeObjectURL(url));
       };
-      window.addEventListener('afterprint', cleanupFn);
-      handedOff = true;
 
-      // window.print() 保持在双 rAF 之后立即调用，前面不引入任何固定延时。
-      // 容器只在「打印确实结束」后才由 cleanupFn 移除，对话框停留 30s / 60s 都不受影响。
-      window.print();
-
-      // G3-lite：去掉 10s 定时清理（Chrome/Edge 打印对话框打开期间 afterprint 不派发，
-      // 用户选打印机、调份数 / 方向、网络打印机响应慢，停留超 10s 很常见；定时 cleanup
-      // 会在栅格化期间移除容器，正是旧实现 500ms 的同一种病根）。
-      // 改用「窗口重新获得焦点 / 用户回到页面 / 页面重新可见」作为 afterprint 不派发时的兜底：
-      // 监听器在 window.print() 返回之后才注册，绝不会在打印栅格化之前抢先移除容器。
-      if (!cleaned) {
-        onReturn = () => {
-          // 用 document.hidden 布尔判断而非状态字符串比较，避免 Tailwind JIT
-          // 把注释/字面量里的某个词误判为工具类、往全站 CSS 里多编一条无关规则。
-          if (!document.hidden) cleanupFn?.();
-        };
-        window.addEventListener('focus', onReturn);
-        window.addEventListener('pointerdown', onReturn);
-        document.addEventListener('visibilitychange', onReturn);
+      pw = window.open('', '_blank');
+      if (!pw) {
+        releaseAllBlobs(); // 弹窗被拦截：没有窗口会用到这些 blob，立即释放
+        setImportNotice('请允许弹出窗口，才能批量打印信封');
+        return;
       }
+
+      // blob 创建方（主窗口）持有释放函数；预览窗关闭的所有路径统一回调它。
+      // 同时挂上守卫复位通道：跨窗口 beforeunload/pagehide 在部分内核不可靠，
+      // 预览窗改为直接函数调用通知主窗口复位，事件监听只作冗余兜底。
+      const pwHooks = pw as Window & {
+        __envoReleasePrintBlob?: () => void;
+        __envoReleaseGuard?: () => void;
+      };
+      pwHooks.__envoReleasePrintBlob = releaseAllBlobs;
+      pwHooks.__envoReleaseGuard = releaseGuardOnce;
+      // 主窗口侧冗余兜底：预览窗关闭（打印完成 / 取消 / 用户直接关窗）即释放 blob + 复位守卫，
+      // 覆盖 beforeunload / pagehide。打印对话框停留期间 afterprint 不派发，故绝不用定时器复位。
+      const onPreviewClosed = () => {
+        releaseAllBlobs();
+        releaseGuardOnce();
+      };
+      pw.addEventListener('beforeunload', onPreviewClosed);
+      pw.addEventListener('pagehide', onPreviewClosed);
+
+      const blobUrlsJs = blobUrls.map((u) => `'${u}'`).join(',');
+      const imgsHtml = blobUrls.map((url, i) => {
+        const last = i === blobUrls.length - 1;
+        const name = escapeHtml(selected[i].name || `第${i + 1}张`);
+        return `<img class="envelope-page${last ? ' last' : ''}" src="${url}" alt="信封打印预览：${name}" />`;
+      }).join('\n');
+
+      pw.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>信封批量打印</title>
+          <style>
+            @page { size: ${mmW}mm ${mmH}mm; margin: 0; }
+            * { margin: 0; padding: 0; }
+            /* B14：html/body 锁精确 mm 宽度。批量 N 张不能像单张那样固定一页高 +
+               overflow:hidden —— 那会把第 2..N 张直接裁掉；分页交给下方 img 的 break-after。 */
+            html, body {
+              width: ${mmW}mm;
+              overflow-x: hidden;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            /* 每张信封独占一页；末张不强制分页，杜绝尾部空白页 */
+            .envelope-page {
+              width: ${mmW}mm;
+              height: ${mmH}mm;
+              display: block;
+              break-inside: avoid;
+              page-break-inside: avoid;
+              break-after: page;
+              page-break-after: always;
+            }
+            .envelope-page.last {
+              break-after: auto;
+              page-break-after: auto;
+            }
+          </style>
+        </head>
+        <body>
+          ${imgsHtml}
+          <script>
+            // B15：打印对话框关闭后（打印或取消都会触发）自动关闭预览窗口
+            window.onafterprint = function() { window.close(); };
+            // blob 释放：优先回调主窗口（在创建 blob 的上下文里 revoke），
+            // 退回 opener 的 URL，最后才是本窗口 URL（同源按 origin 共享）。幂等。
+            var blobUrls = [${blobUrlsJs}];
+            var releaseBlob = function() {
+              try {
+                // 打印结束 / 关窗信号：先直接回调主窗口复位并发守卫（幂等），再释放 blob。
+                // 顺序不能反 —— 守卫卡住会让「批量打印」按钮永久禁用。
+                if (typeof window.__envoReleaseGuard === 'function') window.__envoReleaseGuard();
+                if (typeof window.__envoReleasePrintBlob === 'function') {
+                  window.__envoReleasePrintBlob();
+                  return;
+                }
+                var u = (window.opener && window.opener.URL) ? window.opener.URL : URL;
+                for (var i = 0; i < blobUrls.length; i++) u.revokeObjectURL(blobUrls[i]);
+              } catch (e) {}
+            };
+            window.addEventListener('afterprint', releaseBlob);
+            window.addEventListener('beforeunload', releaseBlob);
+            window.addEventListener('pagehide', releaseBlob);
+
+            // 等全部图可绘制后再 print，零 setTimeout：
+            //   onload 计数（每张图数据就绪）+ 双 rAF（完成一帧布局）为兜底信号；
+            //   Promise.all(decode()) 为精确信号；doPrint 幂等，只打印一次。
+            var imgs = Array.prototype.slice.call(document.querySelectorAll('.envelope-page'));
+            var printed = false;
+            var doPrint = function() {
+              if (printed) return;
+              printed = true;
+              window.print();
+            };
+            var onAllReady = function() {
+              requestAnimationFrame(function() { requestAnimationFrame(doPrint); });
+              Promise.all(imgs.map(function(img) {
+                return (typeof img.decode === 'function') ? img.decode().catch(function() {}) : Promise.resolve();
+              })).then(doPrint).catch(function() {});
+            };
+            var loaded = 0;
+            var onOneLoaded = function() {
+              loaded++;
+              if (loaded >= imgs.length) onAllReady();
+            };
+            imgs.forEach(function(img) {
+              img.onerror = doPrint; // 图裂也拉起对话框，避免预览窗永久无响应
+              if (img.complete && img.naturalWidth > 0) onOneLoaded();
+              else img.onload = onOneLoaded;
+            });
+          <\/script>
+        </body>
+        </html>
+      `);
+      pw.document.close();
+      printArmed = true;
+
+      // 每个地址一条打印记录（对齐单张打印的 type:'print' 语义）
+      selected.forEach((addr) => {
+        addPrintRecord({ recipient: addr, sender, settings: envSettings, type: 'print' });
+      });
+      setImportNotice(`已打开 ${selected.length} 张信封的打印预览，打印完成后窗口将自动关闭`);
     } catch {
-      if (cleanupFn) window.removeEventListener('afterprint', cleanupFn);
-      if (onReturn) {
-        window.removeEventListener('focus', onReturn);
-        window.removeEventListener('pointerdown', onReturn);
-        document.removeEventListener('visibilitychange', onReturn);
+      // 预览窗尚未完整建立时兜底：释放 blob、关掉半开窗、复位守卫；
+      // 已 printArmed 时 blob / 守卫都交给预览窗关闭事件，此刻 revoke 会图裂。
+      if (!printArmed) {
+        releaseAllBlobs();
+        if (pw) { try { pw.close(); } catch { /* 窗口已关闭 */ } }
+        releaseGuardOnce();
       }
-      container?.remove();
-      style?.remove();
-      resetGuard();
+      setImportNotice('批量打印内容生成失败，请重试或改用单张打印');
     } finally {
-      // 提前 return（未选中地址）/ cleanup 注册前抛错：守卫尚未交棒，这里兜底复位
-      if (!handedOff) resetGuard();
+      // 提前 return（未选中 / 弹窗被拦截）/ 预览窗建立前抛错：守卫未交棒，兜底复位。
+      if (!printArmed) releaseGuardOnce();
     }
-  }, [addresses, selectedIds, settings, currentEnvelope]);
+  }, [addresses, selectedIds, settings, currentEnvelope, addPrintRecord]);
+
+  // 批量导出 PDF：多页，每页一个选中地址，页面尺寸锁死为当前信封 mm。
+  // 从 PDF 阅读器打印时页面尺寸不受浏览器「页眉和页脚」设置影响，是直接打印之外的第二条路。
+  const handleBatchExportPDF = async () => {
+    if (batchExportingRef.current || batchPrintingRef.current) return;
+    batchExportingRef.current = true;
+    setBatchExporting(true);
+    try {
+      const selected = addresses.filter((a) => selectedIds.has(a.id));
+      if (selected.length === 0) return;
+
+      const sender = settings.defaultSender;
+      // 与直接打印同口径取 mm，custom 回退 220×110，绝不写死规格。
+      const sizeConfig = ENVELOPE_SIZES[currentEnvelope.size];
+      const mmW = currentEnvelope.size === 'custom'
+        ? (currentEnvelope.customWidth || sizeConfig.width)
+        : sizeConfig.width;
+      const mmH = currentEnvelope.size === 'custom'
+        ? (currentEnvelope.customHeight || sizeConfig.height)
+        : sizeConfig.height;
+      const envSettings = {
+        ...currentEnvelope,
+        fontSize: settings.defaultEnvelope.fontSize,
+        fontFamily: settings.defaultEnvelope.fontFamily,
+        showReturnAddress: settings.defaultEnvelope.showReturnAddress,
+        showLogo: settings.defaultEnvelope.showLogo,
+      };
+      await document.fonts.ready;
+
+      const orientation: 'l' | 'p' = mmW > mmH ? 'l' : 'p';
+      const pdf = new jsPDF({ orientation, unit: 'mm', format: [mmW, mmH] });
+      for (let i = 0; i < selected.length; i++) {
+        // 4× DPR 高清绘制 → blob → dataURL；第一页也要 addImage，后续页先 addPage。
+        const canvas = document.createElement('canvas');
+        drawEnvelope(canvas, sender, selected[i], envSettings, true, 4);
+        const imgData = await blobToDataUrl(await canvasToBlob(canvas));
+        if (i > 0) pdf.addPage([mmW, mmH], orientation);
+        pdf.addImage(imgData, 'PNG', 0, 0, mmW, mmH);
+      }
+
+      const d = new Date();
+      const dateStr = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+      pdf.save(`信封批量_${selected.length}张_${dateStr}.pdf`);
+
+      selected.forEach((addr) => {
+        addPrintRecord({ recipient: addr, sender, settings: envSettings, type: 'pdf' });
+      });
+      setImportNotice(`已导出 ${selected.length} 张信封的 PDF，可从 PDF 阅读器直接打印`);
+    } catch {
+      setImportNotice('批量导出 PDF 失败，请重试或改用直接打印');
+    } finally {
+      batchExportingRef.current = false;
+      setBatchExporting(false);
+    }
+  };
 
   // 二次确认入口：只负责打开确认框，不碰打印链路、不改动选中集。
   // 取消时 ConfirmDialog 只把 pendingBatchPrint 置回 false，不触发任何打印。
@@ -725,7 +839,7 @@ export default function AddressBook() {
 
         {/* Batch actions */}
         {addresses.length > 0 && (
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="flex flex-wrap items-center gap-2 ml-auto">
             <button
               onClick={allSelected ? deselectAll : selectAll}
               className="text-xs text-[var(--accent-foreground)] hover:opacity-80 py-2 min-h-[44px] sm:min-h-0"
@@ -733,15 +847,27 @@ export default function AddressBook() {
               {allSelected ? '取消全选' : '全选'}
             </button>
             {selectedCount > 0 && (
-              <button
-                onClick={requestBatchPrint}
-                disabled={batchPrinting}
-                aria-busy={batchPrinting}
-                className="btn-primary"
-              >
-                <Printer className="w-4 h-4" />
-                批量打印（{selectedCount}）
-              </button>
+              <>
+                <button
+                  onClick={requestBatchPrint}
+                  disabled={batchPrinting || batchExporting}
+                  aria-busy={batchPrinting}
+                  className="btn-primary"
+                >
+                  <Printer className="w-4 h-4" />
+                  批量打印（{selectedCount}）
+                </button>
+                <button
+                  onClick={handleBatchExportPDF}
+                  disabled={batchExporting || batchPrinting}
+                  aria-busy={batchExporting}
+                  title="批量导出多页 PDF，页面尺寸锁定为当前信封规格，可从 PDF 阅读器直接打印"
+                  className="btn-outline"
+                >
+                  <Download className="w-4 h-4" />
+                  {batchExporting ? '生成中…' : `批量导出 PDF（${selectedCount}）`}
+                </button>
+              </>
             )}
           </div>
         )}
@@ -953,6 +1079,10 @@ export default function AddressBook() {
             {selectedCount > 5 ? `… 等共 ${selectedCount} 条` : `共 ${selectedCount} 条`}
             <br />
             <span className="text-[var(--warning-fg)] font-medium">打印为实体操作，确认后无法撤销，请先核对张数与收件人。</span>
+            <br />
+            <span className="text-[var(--accent-foreground)] font-medium">
+              若打印预览出现页码 / 日期 / 网址：请在打印对话框点「更多设置」→ 取消勾选「页眉和页脚」（Chrome 会记住，之后不再出现）。也可改用「批量导出 PDF」直接打印。
+            </span>
           </>
         }
         confirmText="确认打印"
