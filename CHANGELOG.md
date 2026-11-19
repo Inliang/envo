@@ -75,6 +75,15 @@
 
 > 范围与红线：仅改 `AddressBook.tsx` / `importAddresses.ts` / `exportExcel.ts` 三个文件，store / 类型 / ConfirmDialog / 打印链路（EnvelopeEditor / envelopeCanvas）/ 样式 / index.html / public 全部未动；上一轮修好的批量打印链路（4× DPR、Blob objectURL、并发守卫、afterprint 清理、零定时器、B14 / B15）函数体逐字节零改动。
 
+## 2026-11-19 · 批量打印空白页与页码修复
+
+### Fixed
+- **批量打印第一页空白**：旧实现只有 `@page { margin: 0 }`、未声明纸张尺寸，Chrome 按默认纸（A4 / Letter）排版，再把 4× DPR canvas 用 `max-width:100%` 按视口缩放，换算回 mm 有亚像素误差，且末张 canvas 仍带强制分页 → 多排一张空白纸。现对齐单张 B14 口径：`@page { size: 信封mm; margin: 0 }` + 清 margin/padding + canvas 精确 mm 宽高 + 只在非末张强制分页（末张 `auto`）。
+- **批量打印纸上出现 `1/3` 页码**：确认为 Chrome 打印「页眉和页脚」的「当前页/总页数」，旧实现的默认纸边距让它有空间显形并印到纸上。现纸张即信封、零边距，页眉页脚无空间，默认打印路径不再出现页码（浏览器打印对话框手动改边距 + 勾选页眉页脚时仍会印，属浏览器行为、CSS 无法禁用）。
+- 多规格回归：DL / C5 / C4 均按各自信封尺寸排版，页数与选中地址数一致。
+
+> 范围与红线：仅改 `src/components/AddressBook.tsx`。刻意不照抄单张的 `overflow:hidden` + 固定一页高 —— 批量有 N 张 canvas，那样会裁掉第 2..N 张。真实打印 PDF 实测：4 张地址 → 4 页、每页 220.1×110.1mm、无空白页、无页码；B14 / B15 / 4× DPR / blob / 并发守卫 / 零定时器全部守住，CSS 产物与改前基线逐字节一致。
+
 ## 2026-07-05
 
 ### Changed

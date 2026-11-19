@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { useStore } from '../store';
-import { TAG_COLORS } from '../store/types';
+import { TAG_COLORS, ENVELOPE_SIZES } from '../store/types';
 import type { Address } from '../store/types';
 import { drawEnvelope } from '../utils/envelopeCanvas';
 import { exportAddressesToExcel, exportSelectedAddressesToExcel, exportAddressTemplate } from '../utils/exportExcel';
@@ -294,6 +294,18 @@ export default function AddressBook() {
       ).forEach((el) => el.remove());
 
       const sender = settings.defaultSender;
+      // B14（批量链路对齐单张打印）：纸张尺寸必须按当前信封规格精确给出。
+      // 批量链路原先只有 `@page { margin:0 }`、没有 size，Chrome 会按打印机默认纸（A4/Letter）
+      // 排版，再把 4× DPR 的 canvas 用 max-width:100%/height:auto 缩放，缩放后的高度与纸张
+      // 可打印区差出亚像素，首尾就会多排一张空白纸；同时默认纸留出的边距让浏览器「页眉和页脚」
+      // 显形，在纸上印出 `1/3` 这类页码。这里按与单张打印同一套口径取 mm 尺寸。
+      const sizeConfig = ENVELOPE_SIZES[currentEnvelope.size];
+      const mmW = currentEnvelope.size === 'custom'
+        ? (currentEnvelope.customWidth || sizeConfig.width)
+        : sizeConfig.width;
+      const mmH = currentEnvelope.size === 'custom'
+        ? (currentEnvelope.customHeight || sizeConfig.height)
+        : sizeConfig.height;
       const envSettings = {
         ...currentEnvelope,
         fontSize: settings.defaultEnvelope.fontSize,
@@ -314,22 +326,48 @@ export default function AddressBook() {
       style = document.createElement('style');
       style.id = 'envo-batch-print-style';
       style.dataset.envoBatchState = 'active';
+      // B14 防护在批量链路的对应实现：
+      // 1) @page 显式 size + margin:0 —— 纸张就是信封本身，没有留给浏览器页眉页脚的边距，
+      //    `1/3` 这类页码不会再印到纸上；同时也避免打印机默认纸造成的尺寸错配。
+      // 2) * / html / body 清 margin、padding，并锁 width；overflow-x:hidden 兜住横向亚像素溢出。
+      //    这里刻意不写 overflow:hidden 或固定 body height —— 单张只有一张图那样写没问题，
+      //    批量有 N 张 canvas，固定成一页高会把第 2..N 张直接裁掉。
+      // 3) canvas 用精确 mm 宽高而不是 max-width:100%/height:auto —— 消除 4× 固有尺寸换算
+      //    回 mm 时的四舍五入误差，这是空白页的直接来源。
+      // 4) 强制分页只加在「非最后一张」；Tailwind JIT 不会扫到这里（动态字符串），
+      //    所以同时写 break-after 与 page-break-after 两套属性覆盖新旧内核。
       style.textContent = `
       @media print {
+        @page { size: ${mmW}mm ${mmH}mm; margin: 0; }
+        * { margin: 0; padding: 0; }
+        html, body {
+          width: ${mmW}mm;
+          overflow-x: hidden;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
         body > *:not(#envo-batch-print-area) { display: none !important; }
         #envo-batch-print-area {
           position: static !important;
           opacity: 1 !important;
           z-index: auto !important;
+          width: ${mmW}mm !important;
         }
         .envo-batch-canvas {
           display: block;
-          page-break-after: always;
-          max-width: 100%;
-          height: auto;
+          width: ${mmW}mm;
+          height: ${mmH}mm;
+          break-inside: avoid;
+          page-break-inside: avoid;
         }
-        .envo-batch-canvas:last-child { page-break-after: avoid; }
-        @page { margin: 0; }
+        .envo-batch-canvas:not(:last-child) {
+          break-after: page;
+          page-break-after: always;
+        }
+        .envo-batch-canvas:last-child {
+          break-after: auto;
+          page-break-after: auto;
+        }
       }
     `;
       document.head.appendChild(style);
